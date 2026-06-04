@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { initDB } from './services/db';
+import logoVertical from './assets/logo_vertical.png';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
@@ -77,9 +78,25 @@ function App() {
 
   if (!dbInitialized) {
     return (
-      <div style={{ display: 'flex', height: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f7fe' }}>
+      <div style={{ display: 'flex', height: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f7fe', fontFamily: 'system-ui' }}>
+        <style>{`
+          @keyframes logo-pulse {
+            0%, 100% { transform: scale(0.97); opacity: 0.85; filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.15)); }
+            50% { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.35)); }
+          }
+        `}</style>
         <div style={{ textAlign: 'center' }}>
-          <img src="/src/assets/logo_vertical.png" alt="Tin Học GenZ Logo" style={{ width: '160px', height: '160px', objectFit: 'contain', marginBottom: 12 }} />
+          <img 
+            src={logoVertical} 
+            alt="Tin Học GenZ Logo" 
+            style={{ 
+              width: '160px', 
+              height: '160px', 
+              objectFit: 'contain', 
+              marginBottom: 12,
+              animation: 'logo-pulse 2.5s ease-in-out infinite' 
+            }} 
+          />
           <p style={{ color: '#64748b', fontWeight: 600 }}>Đang tải cơ sở dữ liệu học tập...</p>
         </div>
       </div>

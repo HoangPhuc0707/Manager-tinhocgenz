@@ -1,3 +1,4 @@
+import logoHorizontal from '../assets/logo_horizontal.png';
 import '../styles/theme.css';
 
 const Sidebar = ({ activeTab, setActiveTab, role, isOpen, setIsOpen }) => {
@@ -128,7 +129,7 @@ const Sidebar = ({ activeTab, setActiveTab, role, isOpen, setIsOpen }) => {
 
       <div className="sidebar-logo" style={{ display: 'flex', justifyContent: 'center', padding: '16px 12px' }}>
         <img 
-          src="/src/assets/logo_horizontal.png" 
+          src={logoHorizontal} 
           alt="Tin Học GenZ Logo" 
           style={{ width: '100%', maxHeight: '42px', objectFit: 'contain', display: 'block' }} 
         />

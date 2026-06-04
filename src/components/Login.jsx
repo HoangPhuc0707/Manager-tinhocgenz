@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { login } from '../services/db';
+import logoVertical from '../assets/logo_vertical.png';
 import '../styles/theme.css';
 
 const Login = ({ onLoginSuccess }) => {
@@ -40,7 +41,7 @@ const Login = ({ onLoginSuccess }) => {
       
       <div className="login-card">
         <div className="login-header">
-          <img src="/src/assets/logo_vertical.png" alt="Tin Học GenZ Logo" className="login-logo" />
+          <img src={logoVertical} alt="Tin Học GenZ Logo" className="login-logo" />
           <h2 className="login-title">Hệ thống Quản lý Học tập</h2>
           <p className="login-subtitle">Chào mừng bạn trở lại với Tin Học GenZ</p>
         </div>
@@ -184,6 +185,18 @@ const Login = ({ onLoginSuccess }) => {
           object-fit: contain;
           margin-bottom: 2px;
           filter: drop-shadow(0 0 12px rgba(37, 99, 235, 0.25));
+          animation: logo-float 3s ease-in-out infinite;
+        }
+
+        @keyframes logo-float {
+          0%, 100% {
+            transform: translateY(0);
+            filter: drop-shadow(0 0 12px rgba(37, 99, 235, 0.25));
+          }
+          50% {
+            transform: translateY(-4px);
+            filter: drop-shadow(0 0 18px rgba(37, 99, 235, 0.45));
+          }
         }
 
         .login-title {
