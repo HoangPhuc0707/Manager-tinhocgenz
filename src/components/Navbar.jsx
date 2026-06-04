@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getTutors } from '../services/db';
 import '../styles/theme.css';
 

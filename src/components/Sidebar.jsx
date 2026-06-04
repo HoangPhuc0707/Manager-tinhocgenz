@@ -1,4 +1,3 @@
-import React from 'react';
 import '../styles/theme.css';
 
 const Sidebar = ({ activeTab, setActiveTab, role, isOpen, setIsOpen }) => {

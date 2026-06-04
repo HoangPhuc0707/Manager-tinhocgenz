@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getTutors, addTutor, updateTutor, deleteTutor, getSubjects, getStudents, getPayouts } from '../services/db';
 import ConfirmModal from './ConfirmModal';
 import '../styles/theme.css';
@@ -10,6 +10,7 @@ const Tutors = ({ role, triggerToast }) => {
   const [payouts, setPayouts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
  
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -32,20 +33,19 @@ const Tutors = ({ role, triggerToast }) => {
   });
  
   useEffect(() => {
+    const fetchData = async () => {
+      const list = await getTutors();
+      const subs = await getSubjects();
+      const studs = await getStudents();
+      const pays = await getPayouts();
+ 
+      setTutors(list);
+      setSubjects(subs);
+      setStudents(studs);
+      setPayouts(pays);
+    };
     fetchData();
-  }, []);
- 
-  const fetchData = async () => {
-    const list = await getTutors();
-    const subs = await getSubjects();
-    const studs = await getStudents();
-    const pays = await getPayouts();
- 
-    setTutors(list);
-    setSubjects(subs);
-    setStudents(studs);
-    setPayouts(pays);
-  };
+  }, [refreshTrigger]);
  
   if (role !== 'Admin') {
     return <div className="card text-danger">Quyền truy cập bị từ chối! Trang này chỉ dành cho Admin.</div>;
@@ -130,7 +130,7 @@ const Tutors = ({ role, triggerToast }) => {
     });
     triggerToast('Thêm hồ sơ Gia sư mới thành công!', 'success');
     setShowAddModal(false);
-    fetchData();
+    setRefreshTrigger(prev => prev + 1);
   };
  
   // Edit submit
@@ -146,7 +146,7 @@ const Tutors = ({ role, triggerToast }) => {
     });
     triggerToast('Cập nhật hồ sơ Gia sư thành công!', 'success');
     setShowEditModal(false);
-    fetchData();
+    setRefreshTrigger(prev => prev + 1);
   };
  
   // Delete click
@@ -161,7 +161,7 @@ const Tutors = ({ role, triggerToast }) => {
       triggerToast('Đã xóa hồ sơ Gia sư thành công!', 'success');
       setTutorToDelete(null);
       setConfirmOpen(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     }
   };
  

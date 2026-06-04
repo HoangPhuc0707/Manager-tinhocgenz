@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { initDB } from './services/db';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -36,6 +36,7 @@ function App() {
   // Redirect tutor to dashboard if they are on an admin-only tab
   useEffect(() => {
     if (role === 'Gia sư' && ['tutors', 'settings'].includes(activeTab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab('dashboard');
     }
   }, [role, activeTab]);
@@ -55,6 +56,7 @@ function App() {
 
   // Close sidebar on mobile when tab changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSidebarOpen(false);
   }, [activeTab]);
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   getStudents, getReceipts, addReceipt, deleteReceipt,
   getPayouts, addPayout, updatePayout, deletePayout,
@@ -13,6 +13,7 @@ const Payments = ({ role, triggerToast }) => {
   const [payouts, setPayouts] = useState([]);
   const [tutors, setTutors] = useState([]);
   const [referrals, setReferrals] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const [previewImage, setPreviewImage] = useState(null);
 
@@ -90,22 +91,21 @@ const Payments = ({ role, triggerToast }) => {
   });
  
   useEffect(() => {
+    const fetchData = async () => {
+      const s = await getStudents();
+      const r = await getReceipts();
+      const p = await getPayouts();
+      const t = await getTutors();
+      const ref = await getReferrals();
+
+      setStudents(s);
+      setReceipts(r);
+      setPayouts(p);
+      setTutors(t);
+      setReferrals(ref);
+    };
     fetchData();
-  }, []);
- 
-  const fetchData = async () => {
-    const s = await getStudents();
-    const r = await getReceipts();
-    const p = await getPayouts();
-    const t = await getTutors();
-    const ref = await getReferrals();
- 
-    setStudents(s);
-    setReceipts(r);
-    setPayouts(p);
-    setTutors(t);
-    setReferrals(ref);
-  };
+  }, [refreshTrigger]);
  
   if (role !== 'Admin' && role !== 'Gia sư') {
     return <div className="card text-danger">Quyền truy cập bị từ chối! Mục quản lý Thu & Chi chỉ dành cho Admin hoặc Gia sư.</div>;
@@ -131,14 +131,11 @@ const Payments = ({ role, triggerToast }) => {
       return;
     }
  
-    let recipientName = '';
-    if (type === 'Gia sư') {
-      const t = tutors.find(t => t.id === recipientId);
-      recipientName = t ? `${t.id} - ${t.name}` : recipientId;
-    } else {
-      const r = referrals.find(r => r.id === recipientId);
-      recipientName = r ? `${r.id} - ${r.name}` : recipientId;
-    }
+    const t = type === 'Gia sư' ? tutors.find(t => t.id === recipientId) : null;
+    const r = type !== 'Gia sư' ? referrals.find(r => r.id === recipientId) : null;
+    const recipientName = type === 'Gia sư'
+      ? (t ? `${t.id} - ${t.name}` : recipientId)
+      : (r ? `${r.id} - ${r.name}` : recipientId);
  
     // Find if payout already exists
     const existingPayout = payouts.find(
@@ -216,7 +213,7 @@ const Payments = ({ role, triggerToast }) => {
       }
  
       setShowPayoutModal(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -262,7 +259,7 @@ const Payments = ({ role, triggerToast }) => {
       setNewReceiptForm(prev => ({ ...prev, amount: '', proofImg: '' }));
       const fileInput = document.getElementById('receipt-proof-input');
       if (fileInput) fileInput.value = '';
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -292,7 +289,7 @@ const Payments = ({ role, triggerToast }) => {
         }
 
         setConfirmOpen(false);
-        fetchData();
+        setRefreshTrigger(prev => prev + 1);
       } catch (err) {
         triggerToast(err.message, 'danger');
       }
@@ -301,7 +298,7 @@ const Payments = ({ role, triggerToast }) => {
         await deletePayout(confirmConfig.id);
         triggerToast('Đã xóa phiếu chi thành công!', 'success');
         setConfirmOpen(false);
-        fetchData();
+        setRefreshTrigger(prev => prev + 1);
       } catch (err) {
         triggerToast(err.message, 'danger');
       }
@@ -350,7 +347,7 @@ const Payments = ({ role, triggerToast }) => {
       });
       triggerToast('Ghi nhận đóng học phí thành công!', 'success');
       setShowAddReceiptFlatModal(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -381,14 +378,11 @@ const Payments = ({ role, triggerToast }) => {
 
   const handleOpenEditPayoutFromList = (payout) => {
     const student = students.find(s => s.id === payout.studentId);
-    let recipientName = '';
-    if (payout.type === 'Gia sư') {
-      const t = tutors.find(t => t.id === payout.recipientId);
-      recipientName = t ? `${t.id} - ${t.name}` : payout.recipientId;
-    } else {
-      const r = referrals.find(r => r.id === payout.recipientId);
-      recipientName = r ? `${r.id} - ${r.name}` : payout.recipientId;
-    }
+    const t = payout.type === 'Gia sư' ? tutors.find(t => t.id === payout.recipientId) : null;
+    const r = payout.type !== 'Gia sư' ? referrals.find(r => r.id === payout.recipientId) : null;
+    const recipientName = payout.type === 'Gia sư'
+      ? (t ? `${t.id} - ${t.name}` : payout.recipientId)
+      : (r ? `${r.id} - ${r.name}` : payout.recipientId);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -481,7 +475,7 @@ const Payments = ({ role, triggerToast }) => {
       });
       triggerToast('Duyệt chi thanh toán thành công!', 'success');
       setShowProcessPayFlatModal(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -1035,14 +1029,9 @@ const Payments = ({ role, triggerToast }) => {
                   <tbody>
                     {filteredPayouts.map(p => {
                       const student = students.find(s => s.id === p.studentId);
-                      let recipientName = '';
-                      if (p.type === 'Gia sư') {
-                        const t = tutors.find(t => t.id === p.recipientId);
-                        recipientName = t ? t.name : p.recipientId;
-                      } else {
-                        const r = referrals.find(r => r.id === p.recipientId);
-                        recipientName = r ? r.name : p.recipientId;
-                      }
+                      const recipientName = p.type === 'Gia sư'
+                        ? (tutors.find(t => t.id === p.recipientId)?.name || p.recipientId)
+                        : (referrals.find(r => r.id === p.recipientId)?.name || p.recipientId);
                       return (
                         <tr key={p.id}>
                           <td><span style={{ fontWeight: 700 }}>{p.id}</span></td>

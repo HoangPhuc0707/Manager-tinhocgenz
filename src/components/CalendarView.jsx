@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getLessons, addLesson, updateLesson, deleteLesson, getStudents, getTutors, getSubjects } from '../services/db';
 import ConfirmModal from './ConfirmModal';
 import '../styles/theme.css';
@@ -68,6 +68,7 @@ const checkLessonConflicts = (lesson, allLessons, students) => {
 
 const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   const [lessons, setLessons] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [students, setStudents] = useState([]);
   const [tutors, setTutors] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -111,19 +112,18 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   });
 
   useEffect(() => {
+    const fetchData = async () => {
+      const l = await getLessons();
+      const s = await getStudents();
+      const t = await getTutors();
+      const sub = await getSubjects();
+      setLessons(l);
+      setStudents(s);
+      setTutors(t);
+      setSubjects(sub);
+    };
     fetchData();
-  }, [role, activeTutorId]);
-
-  const fetchData = async () => {
-    const l = await getLessons();
-    const s = await getStudents();
-    const t = await getTutors();
-    const sub = await getSubjects();
-    setLessons(l);
-    setStudents(s);
-    setTutors(t);
-    setSubjects(sub);
-  };
+  }, [role, activeTutorId, refreshTrigger]);
 
   // Helper date parsing
   const formatIsoDate = (year, month, day) => {
@@ -247,7 +247,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
       });
       triggerToast('Đã thêm lịch học mới thành công!', 'success');
       setShowAddModal(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -274,7 +274,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
       });
       triggerToast('Đã cập nhật lịch học và điểm danh!', 'success');
       setShowDetailModal(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -292,7 +292,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
       triggerToast('Đã xóa buổi học thành công!', 'success');
       setShowDetailModal(false);
       setConfirmOpen(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     }
   };
 
@@ -418,7 +418,6 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
                 <div className="calendar-events">
                   {dayLessons.map(lesson => {
                     const student = students.find(s => s.id === lesson.studentId);
-                    const subject = student ? subjects.find(sub => sub.id === student.subjectId) : null;
                     const timeStr = lesson.dateTime.split('T')[1]?.slice(0, 5) || '19:30';
                     const endTimeStr = lesson.endTime || '21:00';
 

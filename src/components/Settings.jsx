@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   getSubjects, addSubject, updateSubject, deleteSubject,
   getReferrals, addReferral, updateReferral, deleteReferral
@@ -46,21 +46,22 @@ const Settings = ({ role, triggerToast }) => {
     tuition: 3000000
   });
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const [referralForm, setReferralForm] = useState({
     name: '',
     details: ''
   });
 
   useEffect(() => {
+    const fetchData = async () => {
+      const s = await getSubjects();
+      const r = await getReferrals();
+      setSubjects(s);
+      setReferrals(r);
+    };
     fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    const s = await getSubjects();
-    const r = await getReferrals();
-    setSubjects(s);
-    setReferrals(r);
-  };
+  }, [refreshTrigger]);
 
   if (role !== 'Admin') {
     return <div className="card text-danger">Quyền truy cập bị từ chối! Chỉ Admin có quyền thiết lập cấu hình.</div>;
@@ -102,7 +103,7 @@ const Settings = ({ role, triggerToast }) => {
       triggerToast('Thêm môn học mới thành công!', 'success');
       setShowAddSubjectModal(false);
     }
-    fetchData();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleDeleteSubject = (id) => {
@@ -149,7 +150,7 @@ const Settings = ({ role, triggerToast }) => {
       triggerToast('Thêm nguồn giới thiệu mới thành công!', 'success');
       setShowAddReferralModal(false);
     }
-    fetchData();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleDeleteReferral = (id) => {
@@ -174,7 +175,7 @@ const Settings = ({ role, triggerToast }) => {
     }
 
     setConfirmOpen(false);
-    fetchData();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const formatCurrency = (val) => {

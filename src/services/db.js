@@ -1,9 +1,34 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000/api'
+    : '/api');
+
+const fetchWithTimeout = async (url, options = {}) => {
+  const { timeout = 20000, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await window.fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    if (error.name === 'AbortError') {
+      throw new Error('Yêu cầu quá thời gian phản hồi từ máy chủ (Timeout). Vui lòng thử lại!', { cause: error });
+    }
+    throw error;
+  }
+};
+
+const fetch = fetchWithTimeout;
 
 // Initialize DB (calls backend recalculation helper to ensure sync on load)
 export const initDB = async () => {
   try {
-    const res = await fetch(`${BASE_URL}/students/recalculate`, { method: 'POST' });
+    const res = await fetch(`${BASE_URL}/students/recalculate`, { method: 'POST', timeout: 60000 });
     return await res.json();
   } catch (err) {
     console.error('Failed to init DB (connect backend):', err);

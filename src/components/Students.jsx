@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getStudents, addStudent, updateStudent, deleteStudent, getTutors, getSubjects, getReferrals, getReceipts } from '../services/db';
 import ConfirmModal from './ConfirmModal';
 import '../styles/theme.css';
@@ -9,6 +9,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
   const [subjects, setSubjects] = useState([]);
   const [referrals, setReferrals] = useState([]);
   const [receipts, setReceipts] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
  
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,22 +45,21 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
   });
  
   useEffect(() => {
+    const fetchData = async () => {
+      const list = await getStudents();
+      const tList = await getTutors();
+      const sList = await getSubjects();
+      const rList = await getReferrals();
+      const recs = await getReceipts();
+ 
+      setStudents(list);
+      setTutors(tList);
+      setSubjects(sList);
+      setReferrals(rList);
+      setReceipts(recs);
+    };
     fetchData();
-  }, [role, activeTutorId]);
- 
-  const fetchData = async () => {
-    const list = await getStudents();
-    const tList = await getTutors();
-    const sList = await getSubjects();
-    const rList = await getReferrals();
-    const recs = await getReceipts();
- 
-    setStudents(list);
-    setTutors(tList);
-    setSubjects(sList);
-    setReferrals(rList);
-    setReceipts(recs);
-  };
+  }, [role, activeTutorId, refreshTrigger]);
  
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
   const handleSubjectFilterChange = (e) => setSubjectFilter(e.target.value);
@@ -134,7 +134,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       });
       triggerToast('Đã thêm học viên mới và tạo tài khoản liên quan!', 'success');
       setShowAddModal(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -167,7 +167,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
         setActiveStudentDrawer(updated);
       }
  
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
@@ -188,7 +188,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       }
       setStudentToDelete(null);
       setConfirmOpen(false);
-      fetchData();
+      setRefreshTrigger(prev => prev + 1);
     }
   };
  
@@ -212,22 +212,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
     return val ? val.toLocaleString('vi-VN') + ' đ' : '0 đ';
   };
  
-  const getAvatarColor = (name) => {
-    const colors = [
-      '#3b82f6', // blue
-      '#10b981', // green
-      '#ef4444', // red
-      '#f59e0b', // amber
-      '#8b5cf6', // purple
-      '#ec4899', // pink
-      '#06b6d4', // cyan
-    ];
-    let sum = 0;
-    for (let i = 0; i < name.length; i++) {
-      sum += name.charCodeAt(i);
-    }
-    return colors[sum % colors.length];
-  };
+
  
   return (
     <div className="students-container">
