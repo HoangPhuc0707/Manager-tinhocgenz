@@ -271,7 +271,7 @@ export const login = async (username, password) => {
   });
   if (!res.ok) {
     const err = await res.json();
-    return { success: false, message: err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác' };
+    return { success: false, message: err.error || err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác' };
   }
   return await res.json();
 };
