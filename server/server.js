@@ -449,6 +449,55 @@ app.post('/api/lessons', async (req, res) => {
     res.status(201).json(newLesson);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+app.post('/api/lessons/batch', async (req, res) => {
+  try {
+    const { lessons } = req.body;
+    if (!Array.isArray(lessons) || lessons.length === 0) {
+      return res.status(400).json({ error: 'Danh sách buổi học không hợp lệ hoặc rỗng.' });
+    }
+
+    const createdLessons = [];
+    const studentIdsToRecalculate = new Set();
+    const baseTime = Date.now();
+
+    for (let i = 0; i < lessons.length; i++) {
+      const lesson = lessons[i];
+      let learningFormat = lesson.learningFormat;
+      let address = lesson.address;
+
+      if (!learningFormat || !address) {
+        const student = await Student.findOne({ id: lesson.studentId });
+        if (student) {
+          if (!learningFormat) learningFormat = student.learningFormat;
+          if (!address) address = student.address;
+        }
+      }
+
+      // Ensure unique ID for each lesson by adding iteration index to baseTime
+      const id = 'LH' + (baseTime + i).toString().slice(-5);
+      const newLesson = new Lesson({
+        ...lesson,
+        id,
+        learningFormat: learningFormat || 'Offline',
+        address: address || '',
+        status: lesson.status || 'Chưa diễn ra'
+      });
+      await newLesson.save();
+      createdLessons.push(newLesson);
+      studentIdsToRecalculate.add(lesson.studentId);
+    }
+
+    // Recalculate each affected student once at the end
+    for (const studentId of studentIdsToRecalculate) {
+      await recalculateStudent(studentId);
+    }
+
+    res.status(201).json(createdLessons);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.put('/api/lessons/:id', async (req, res) => {
   try {
     const id = req.params.id;

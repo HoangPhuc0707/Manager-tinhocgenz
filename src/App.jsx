@@ -124,7 +124,7 @@ function App() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard role={role} activeTutorId={activeTutorId} />;
+        return <Dashboard role={role} activeTutorId={activeTutorId} triggerToast={triggerToast} />;
       case 'calendar':
         return <CalendarView role={role} activeTutorId={activeTutorId} triggerToast={triggerToast} />;
       case 'tutors':

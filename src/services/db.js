@@ -244,6 +244,19 @@ export const addLesson = async (lesson) => {
   return await res.json();
 };
 
+export const addLessonsBatch = async (lessons) => {
+  const res = await fetch(`${BASE_URL}/lessons/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lessons })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Failed to add batch lessons');
+  }
+  return await res.json();
+};
+
 export const updateLesson = async (id, updatedData) => {
   const res = await fetch(`${BASE_URL}/lessons/${id}`, {
     method: 'PUT',

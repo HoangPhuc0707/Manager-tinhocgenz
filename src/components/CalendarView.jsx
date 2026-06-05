@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getLessons, addLesson, updateLesson, deleteLesson, getStudents, getTutors, getSubjects } from '../services/db';
+import { getLessons, addLesson, updateLesson, deleteLesson, getStudents, getTutors, getSubjects, addLessonsBatch } from '../services/db';
 import ConfirmModal from './ConfirmModal';
 import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
@@ -101,6 +101,14 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
     note: ''
   });
 
+  // Batch scheduling states
+  const [schedulingMode, setSchedulingMode] = useState('single'); // 'single', 'multiple', 'recurring'
+  const [selectedDates, setSelectedDates] = useState([]); // for 'multiple' mode
+  const [selectedDatesInput, setSelectedDatesInput] = useState(''); // input date buffer
+  const [recurringDays, setRecurringDays] = useState([]); // for 'recurring' mode (0 = Sun, 1 = Mon...)
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
   // Edit Lesson Form State (Attendance, Date, Time & Note)
   const [editLessonForm, setEditLessonForm] = useState({
     status: 'Chưa diễn ra',
@@ -161,16 +169,13 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
     ? students.filter(s => s.tutorId === activeTutorId && !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status))
     : students.filter(s => !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status));
 
-  // Handle cell click
-  const handleCellClick = (day) => {
-    const formattedDate = formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), day);
+  const openAddModal = (dateStr) => {
+    const formattedDate = dateStr || formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1);
     setSelectedDateStr(formattedDate);
 
     const defaultStudentId = activeTutorStudents[0]?.id || '';
-
     const student = students.find(s => s.id === defaultStudentId);
 
-    // Default form value
     setNewLessonForm({
       studentId: defaultStudentId,
       time: '19:30',
@@ -181,7 +186,23 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
       note: ''
     });
 
+    setSchedulingMode('single');
+    setSelectedDates([formattedDate]);
+    setSelectedDatesInput(formattedDate);
+    setRecurringDays([]);
+    setStartDate(formattedDate);
+    
+    const d = new Date(formattedDate);
+    d.setDate(d.getDate() + 14);
+    const endFormattedStr = formatIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+    setEndDate(endFormattedStr);
+
     setShowAddModal(true);
+  };
+
+  // Handle cell click
+  const handleCellClick = (day) => {
+    openAddModal(formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), day));
   };
 
   const handleStudentChange = (studentId) => {
@@ -235,21 +256,83 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
       return;
     }
 
-    const dateTimeStr = `${newLessonForm.date}T${newLessonForm.time}`;
+    let datesToRegister = [];
+
+    if (schedulingMode === 'single') {
+      datesToRegister = [newLessonForm.date];
+    } else if (schedulingMode === 'multiple') {
+      if (selectedDates.length === 0) {
+        triggerToast('Vui lòng chọn ít nhất một ngày học!', 'danger');
+        return;
+      }
+      datesToRegister = [...selectedDates];
+    } else if (schedulingMode === 'recurring') {
+      if (recurringDays.length === 0) {
+        triggerToast('Vui lòng chọn ít nhất một thứ trong tuần!', 'danger');
+        return;
+      }
+      if (!startDate || !endDate) {
+        triggerToast('Vui lòng điền đầy đủ từ ngày và đến ngày!', 'danger');
+        return;
+      }
+      if (startDate > endDate) {
+        triggerToast('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!', 'danger');
+        return;
+      }
+
+      // Generate dates matching selection
+      const dates = [];
+      let current = new Date(startDate);
+      const last = new Date(endDate);
+      let limit = 0;
+      while (current <= last && limit < 100) {
+        const dayOfWeek = current.getDay(); // 0 = Sun, 1 = Mon...
+        if (recurringDays.includes(dayOfWeek)) {
+          const year = current.getFullYear();
+          const month = String(current.getMonth() + 1).padStart(2, '0');
+          const day = String(current.getDate()).padStart(2, '0');
+          dates.push(`${year}-${month}-${day}`);
+        }
+        current.setDate(current.getDate() + 1);
+        limit++;
+      }
+
+      if (dates.length === 0) {
+        triggerToast('Không tìm thấy ngày nào phù hợp trong khoảng thời gian đã chọn!', 'danger');
+        return;
+      }
+      datesToRegister = dates;
+    }
+
+    const lessonsToCreate = datesToRegister.map(d => ({
+      tutorId,
+      studentId: student.id,
+      dateTime: `${d}T${newLessonForm.time}`,
+      endTime: newLessonForm.endTime,
+      learningFormat: newLessonForm.learningFormat,
+      address: newLessonForm.address,
+      status: 'Chưa diễn ra',
+      note: newLessonForm.note
+    }));
+
+    // Check conflicts
+    let conflictCount = 0;
+    for (const item of lessonsToCreate) {
+      const conflict = checkLessonConflicts(item, lessons, students);
+      if (conflict.hasConflict && conflict.type === 'overlap') {
+        conflictCount++;
+      }
+    }
 
     try {
-      await addLesson({
-        tutorId,
-        studentId: student.id,
-        dateTime: dateTimeStr,
-        endTime: newLessonForm.endTime,
-        learningFormat: newLessonForm.learningFormat,
-        address: newLessonForm.address,
-        status: 'Chưa diễn ra',
-        note: newLessonForm.note
-      });
-      triggerToast('Đã thêm lịch học mới thành công!', 'success');
+      await addLessonsBatch(lessonsToCreate);
+      triggerToast(`Đã thêm thành công ${lessonsToCreate.length} buổi học mới!`, 'success');
+      if (conflictCount > 0) {
+        triggerToast(`Lưu ý: Có ${conflictCount} buổi bị trùng/sát lịch dạy. Vui lòng kiểm tra lại!`, 'warning');
+      }
       setShowAddModal(false);
+      setSelectedDates([]);
+      setRecurringDays([]);
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
@@ -356,12 +439,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
               Tháng {month + 1} / {year}
             </span>
             <button className="btn btn-outline btn-sm" onClick={nextMonth}>Tháng sau</button>
-            <button className="btn btn-primary btn-sm" onClick={() => {
-              if (!selectedDateStr) {
-                setSelectedDateStr(formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1));
-              }
-              setShowAddModal(true);
-            }}>+ Thêm lịch</button>
+            <button className="btn btn-primary btn-sm" onClick={() => openAddModal(selectedDateStr)}>+ Thêm lịch</button>
           </div>
         </div>
       </div>
@@ -454,7 +532,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
             Lịch học ngày {selectedDateStr ? selectedDateStr.split('-').reverse().join('/') : 'chưa chọn'}
           </h3>
           {selectedDateStr && (
-            <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+            <button className="btn btn-primary btn-sm" onClick={() => openAddModal(selectedDateStr)}>
               + Lên lịch
             </button>
           )}
@@ -587,29 +665,194 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
                       </div>
                     </div>
 
-                    <div className="grid-2">
-                      <div className="form-group">
-                        <label className="form-label">Ngày học *</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          value={newLessonForm.date}
-                          onChange={e => setNewLessonForm({ ...newLessonForm, date: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Hình thức học buổi này</label>
-                        <select
-                          className="form-control"
-                          value={newLessonForm.learningFormat}
-                          onChange={e => setNewLessonForm({ ...newLessonForm, learningFormat: e.target.value })}
+                    <div className="form-group" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                      <label className="form-label">Chế độ lên lịch học</label>
+                      <div className="tab-container" style={{ marginBottom: 0, display: 'flex', gap: 4 }}>
+                        <button
+                          type="button"
+                          className={`tab-item ${schedulingMode === 'single' ? 'active' : ''}`}
+                          onClick={() => setSchedulingMode('single')}
+                          style={{ flex: 1, padding: '8px 12px', background: 'none', border: 'none', borderBottom: schedulingMode === 'single' ? '2px solid var(--primary)' : '2px solid transparent', color: schedulingMode === 'single' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.74rem', cursor: 'pointer' }}
                         >
-                          <option value="Offline">Offline (Trực tiếp)</option>
-                          <option value="Online">Online (Trực tuyến)</option>
-                        </select>
+                          Một buổi
+                        </button>
+                        <button
+                          type="button"
+                          className={`tab-item ${schedulingMode === 'multiple' ? 'active' : ''}`}
+                          onClick={() => setSchedulingMode('multiple')}
+                          style={{ flex: 1, padding: '8px 12px', background: 'none', border: 'none', borderBottom: schedulingMode === 'multiple' ? '2px solid var(--primary)' : '2px solid transparent', color: schedulingMode === 'multiple' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.74rem', cursor: 'pointer' }}
+                        >
+                          Chọn nhiều ngày
+                        </button>
+                        <button
+                          type="button"
+                          className={`tab-item ${schedulingMode === 'recurring' ? 'active' : ''}`}
+                          onClick={() => setSchedulingMode('recurring')}
+                          style={{ flex: 1, padding: '8px 12px', background: 'none', border: 'none', borderBottom: schedulingMode === 'recurring' ? '2px solid var(--primary)' : '2px solid transparent', color: schedulingMode === 'recurring' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.74rem', cursor: 'pointer' }}
+                        >
+                          Định kỳ hàng tuần
+                        </button>
                       </div>
                     </div>
+
+                    {schedulingMode === 'single' && (
+                      <div className="grid-2">
+                        <div className="form-group">
+                          <label className="form-label">Ngày học *</label>
+                          <input
+                            type="date"
+                            className="form-control"
+                            value={newLessonForm.date}
+                            onChange={e => setNewLessonForm({ ...newLessonForm, date: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Hình thức học buổi này</label>
+                          <select
+                            className="form-control"
+                            value={newLessonForm.learningFormat}
+                            onChange={e => setNewLessonForm({ ...newLessonForm, learningFormat: e.target.value })}
+                          >
+                            <option value="Offline">Offline (Trực tiếp)</option>
+                            <option value="Online">Online (Trực tuyến)</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {schedulingMode === 'multiple' && (
+                      <div style={{ padding: '12px', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: 16 }}>
+                        <div className="grid-2">
+                          <div className="form-group">
+                            <label className="form-label">Chọn ngày học</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <input
+                                type="date"
+                                className="form-control"
+                                value={selectedDatesInput}
+                                onChange={e => setSelectedDatesInput(e.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ borderRadius: '8px' }}
+                                onClick={() => {
+                                  if (!selectedDatesInput) return;
+                                  if (!selectedDates.includes(selectedDatesInput)) {
+                                    setSelectedDates([...selectedDates, selectedDatesInput].sort());
+                                  }
+                                }}
+                              >
+                                Thêm
+                              </button>
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Hình thức học</label>
+                            <select
+                              className="form-control"
+                              value={newLessonForm.learningFormat}
+                              onChange={e => setNewLessonForm({ ...newLessonForm, learningFormat: e.target.value })}
+                            >
+                              <option value="Offline">Offline (Trực tiếp)</option>
+                              <option value="Online">Online (Trực tuyến)</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div style={{ marginTop: 4 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Danh sách ngày đã chọn ({selectedDates.length}):</label>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                            {selectedDates.map(d => (
+                              <span key={d} className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', fontSize: '0.7rem' }}>
+                                {d.split('-').reverse().join('/')}
+                                <span 
+                                  style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+                                  onClick={() => setSelectedDates(prev => prev.filter(item => item !== d))}
+                                >
+                                  &times;
+                                </span>
+                              </span>
+                            ))}
+                            {selectedDates.length === 0 && (
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Chưa chọn ngày nào. Vui lòng chọn ngày phía trên và bấm "Thêm".</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {schedulingMode === 'recurring' && (
+                      <div style={{ padding: '12px', backgroundColor: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: 16 }}>
+                        <div className="form-group">
+                          <label className="form-label">Lặp lại vào các thứ trong tuần *</label>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                            {[
+                              { label: 'Thứ 2', val: 1 },
+                              { label: 'Thứ 3', val: 2 },
+                              { label: 'Thứ 4', val: 3 },
+                              { label: 'Thứ 5', val: 4 },
+                              { label: 'Thứ 6', val: 5 },
+                              { label: 'Thứ 7', val: 6 },
+                              { label: 'Chủ Nhật', val: 0 }
+                            ].map(day => {
+                              const isSelected = recurringDays.includes(day.val);
+                              return (
+                                <button
+                                  key={day.val}
+                                  type="button"
+                                  className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-outline'}`}
+                                  style={{ flex: 1, minWidth: '55px', height: '30px', padding: '0 4px', borderRadius: '6px' }}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setRecurringDays(prev => prev.filter(v => v !== day.val));
+                                    } else {
+                                      setRecurringDays(prev => [...prev, day.val]);
+                                    }
+                                  }}
+                                >
+                                  {day.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="grid-2">
+                          <div className="form-group">
+                            <label className="form-label">Từ ngày *</label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              value={startDate}
+                              onChange={e => setStartDate(e.target.value)}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Đến ngày *</label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              value={endDate}
+                              onChange={e => setEndDate(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Hình thức học</label>
+                          <select
+                            className="form-control"
+                            value={newLessonForm.learningFormat}
+                            onChange={e => setNewLessonForm({ ...newLessonForm, learningFormat: e.target.value })}
+                          >
+                            <option value="Offline">Offline (Trực tiếp)</option>
+                            <option value="Online">Online (Trực tuyến)</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="form-group">
                       <label className="form-label">Địa chỉ / Link học buổi này *</label>

@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
-import { getStudents, getTutors, getReceipts, getPayouts, getLessons } from '../services/db';
+import { getStudents, getTutors, getReceipts, getPayouts, getLessons, updateLesson } from '../services/db';
 import '../styles/theme.css';
  
-const Dashboard = ({ role, activeTutorId }) => {
+const Dashboard = ({ role, activeTutorId, triggerToast }) => {
   const [students, setStudents] = useState([]);
   const [tutors, setTutors] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [payouts, setPayouts] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [timeFilter, setTimeFilter] = useState('Tháng');
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [attendanceTab, setAttendanceTab] = useState('pending'); // default to pending
+  const [attendanceDrafts, setAttendanceDrafts] = useState({});
+  const [attendanceTutorFilter, setAttendanceTutorFilter] = useState('');
  
   // Mock "current date" context as June 2026 based on mock data dates
   const CURRENT_MONTH = 5; // June (0-indexed)
@@ -29,7 +34,7 @@ const Dashboard = ({ role, activeTutorId }) => {
       setLessons(l);
     };
     fetchData();
-  }, [role, activeTutorId]);
+  }, [role, activeTutorId, refreshTrigger]);
  
   // Date Parsing Helper
   const parseMockDate = (dateStr) => {
@@ -143,6 +148,263 @@ const Dashboard = ({ role, activeTutorId }) => {
     if (timeFilter === 'Năm') return ['Năm 2024', 'Năm 2025', 'Năm 2026'];
     return ['T4/2026', 'T5/2026', 'T6/2026'];
   };
+
+  // --- QUICK ATTENDANCE HELPERS ---
+  const getTodayDateStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getTodayDateStr();
+
+  // Filter lessons based on role and tutor selection (for admin)
+  const baseAttendanceLessons = lessons.filter(l => {
+    if (role === 'Gia sư') {
+      return l.tutorId === activeTutorId;
+    }
+    if (attendanceTutorFilter) {
+      return l.tutorId === attendanceTutorFilter;
+    }
+    return true;
+  });
+
+  // Filter by attendance tab
+  const getFilteredAttendanceLessons = () => {
+    switch (attendanceTab) {
+      case 'today':
+        return baseAttendanceLessons.filter(l => l.dateTime.split('T')[0] === todayStr);
+      case 'pending':
+        return baseAttendanceLessons
+          .filter(l => l.status === 'Chưa diễn ra')
+          .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+      case 'done':
+        return baseAttendanceLessons
+          .filter(l => l.status === 'Có học' || l.status === 'Vắng học / Hủy buổi')
+          .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+      default:
+        return baseAttendanceLessons;
+    }
+  };
+
+  const filteredAttendanceLessons = getFilteredAttendanceLessons();
+
+  const handleDraftChange = (lessonId, field, value) => {
+    setAttendanceDrafts(prev => ({
+      ...prev,
+      [lessonId]: {
+        ...prev[lessonId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveAttendance = async (lessonId, originalLesson) => {
+    const draft = attendanceDrafts[lessonId] || {};
+    const status = draft.status !== undefined ? draft.status : originalLesson.status;
+    const note = draft.note !== undefined ? draft.note : originalLesson.note;
+
+    try {
+      await updateLesson(lessonId, {
+        status,
+        note
+      });
+      if (triggerToast) {
+        triggerToast('Đã lưu điểm danh và nội dung học thành công!', 'success');
+      }
+      // Clear draft for this lesson
+      setAttendanceDrafts(prev => {
+        const next = { ...prev };
+        delete next[lessonId];
+        return next;
+      });
+      // Trigger dashboard data reload
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      if (triggerToast) {
+        triggerToast(err.message || 'Lỗi khi lưu điểm danh', 'danger');
+      }
+    }
+  };
+
+  const renderQuickAttendance = () => {
+    return (
+      <div className="card-saas quick-attendance-card" style={{ marginTop: 20, padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.2rem' }}>⚡</span>
+            <h3 className="section-title-saas" style={{ margin: 0 }}>Điểm danh nhanh</h3>
+          </div>
+          {role === 'Admin' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Lọc theo Gia sư:</span>
+              <select
+                className="filter-select"
+                style={{ padding: '6px 10px', fontSize: '0.72rem', minWidth: 150 }}
+                value={attendanceTutorFilter}
+                onChange={e => setAttendanceTutorFilter(e.target.value)}
+              >
+                <option value="">Tất cả gia sư</option>
+                {tutors.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Tab Buttons */}
+        <div className="tab-container" style={{ marginBottom: 16 }}>
+          <button
+            type="button"
+            className={`tab-item ${attendanceTab === 'pending' ? 'active' : ''}`}
+            onClick={() => setAttendanceTab('pending')}
+            style={{ background: 'none', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: '10px 16px', borderBottom: attendanceTab === 'pending' ? '2px solid var(--primary)' : '2px solid transparent', color: attendanceTab === 'pending' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.78rem' }}
+          >
+            Chờ điểm danh ({baseAttendanceLessons.filter(l => l.status === 'Chưa diễn ra').length})
+          </button>
+          <button
+            type="button"
+            className={`tab-item ${attendanceTab === 'today' ? 'active' : ''}`}
+            onClick={() => setAttendanceTab('today')}
+            style={{ background: 'none', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: '10px 16px', borderBottom: attendanceTab === 'today' ? '2px solid var(--primary)' : '2px solid transparent', color: attendanceTab === 'today' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.78rem' }}
+          >
+            Lịch hôm nay ({baseAttendanceLessons.filter(l => l.dateTime.split('T')[0] === todayStr).length})
+          </button>
+          <button
+            type="button"
+            className={`tab-item ${attendanceTab === 'done' ? 'active' : ''}`}
+            onClick={() => setAttendanceTab('done')}
+            style={{ background: 'none', border: 'none', fontFamily: 'inherit', cursor: 'pointer', padding: '10px 16px', borderBottom: attendanceTab === 'done' ? '2px solid var(--primary)' : '2px solid transparent', color: attendanceTab === 'done' ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.78rem' }}
+          >
+            Đã điểm danh (Gần đây)
+          </button>
+        </div>
+
+        {/* Table list */}
+        <div className="table-responsive" style={{ border: 'none', marginTop: 8 }}>
+          <table className="table-row-tall" style={{ width: '100%' }}>
+            <thead>
+              <tr>
+                <th style={{ width: '15%' }}>Thời gian</th>
+                <th style={{ width: '25%' }}>Học viên</th>
+                {role === 'Admin' && <th style={{ width: '20%' }}>Gia sư</th>}
+                <th style={{ width: '15%', textAlign: 'center' }}>Điểm danh</th>
+                <th style={{ width: '20%' }}>Nội dung học</th>
+                <th style={{ width: '10%', textAlign: 'center' }}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAttendanceLessons.map(lesson => {
+                const student = students.find(s => s.id === lesson.studentId);
+                const tutor = tutors.find(t => t.id === lesson.tutorId);
+                
+                const draft = attendanceDrafts[lesson.id] || {};
+                const currentStatus = draft.status !== undefined ? draft.status : lesson.status;
+                const currentNote = draft.note !== undefined ? draft.note : (lesson.note || '');
+                
+                const isChecked = currentStatus === 'Có học';
+                const hasChanges = (draft.status !== undefined && draft.status !== lesson.status) || 
+                                   (draft.note !== undefined && draft.note !== (lesson.note || ''));
+
+                return (
+                  <tr key={lesson.id}>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {lesson.dateTime.split('T')[1]?.slice(0, 5) || '19:30'} - {lesson.endTime || '21:00'}
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        {lesson.dateTime.split('T')[0].split('-').reverse().join('/')}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{student ? student.name : lesson.studentId}</div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                        Môn: {student ? student.subjectId : 'Chưa rõ'} • {lesson.learningFormat}
+                      </div>
+                    </td>
+                    {role === 'Admin' && (
+                      <td>
+                        <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{tutor ? tutor.name : lesson.tutorId}</div>
+                      </td>
+                    )}
+                    <td style={{ textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <input
+                          type="checkbox"
+                          id={`check-${lesson.id}`}
+                          checked={isChecked}
+                          onChange={e => handleDraftChange(lesson.id, 'status', e.target.checked ? 'Có học' : 'Chưa diễn ra')}
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            cursor: 'pointer',
+                            accentColor: 'var(--success)'
+                          }}
+                        />
+                        <label 
+                          htmlFor={`check-${lesson.id}`} 
+                          style={{ 
+                            fontSize: '0.72rem', 
+                            fontWeight: 600, 
+                            color: isChecked ? 'var(--success)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            userSelect: 'none'
+                          }}
+                        >
+                          Có học
+                        </label>
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="form-control"
+                        style={{ padding: '6px 10px', fontSize: '0.74rem', borderRadius: '6px' }}
+                        value={currentNote}
+                        placeholder="Nhập nội dung học..."
+                        onChange={e => handleDraftChange(lesson.id, 'note', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${hasChanges ? 'btn-primary' : 'btn-outline'}`}
+                        disabled={!hasChanges}
+                        onClick={() => handleSaveAttendance(lesson.id, lesson)}
+                        style={{
+                          minWidth: '60px',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          opacity: hasChanges ? 1 : 0.5,
+                          cursor: hasChanges ? 'pointer' : 'not-allowed'
+                        }}
+                      >
+                        Lưu
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredAttendanceLessons.length === 0 && (
+                <tr>
+                  <td colSpan={role === 'Admin' ? 6 : 5} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                    {attendanceTab === 'pending' 
+                      ? 'Tuyệt vời! Không có lịch học nào đang chờ điểm danh.' 
+                      : attendanceTab === 'today'
+                      ? 'Hôm nay không có lịch dạy học.'
+                      : 'Chưa có buổi học nào được điểm danh.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
  
   return (
     <div className="dashboard-container">
@@ -252,6 +514,9 @@ const Dashboard = ({ role, activeTutorId }) => {
               <div className="stat-card-saas-sub">Doanh thu trừ thực chi</div>
             </div>
           </div>
+
+          {/* Quick Attendance Section */}
+          {renderQuickAttendance()}
  
           {/* Charts Section - SaaS Bigger Layout */}
           <div className="grid-2-saas" style={{ marginTop: 24 }}>
@@ -517,6 +782,9 @@ const Dashboard = ({ role, activeTutorId }) => {
               <div className="stat-card-saas-sub">Thu nhập chờ tất toán</div>
             </div>
           </div>
+
+          {/* Quick Attendance Section */}
+          {renderQuickAttendance()}
  
           <div className="grid-2-saas" style={{ marginTop: 24 }}>
             {/* Upcoming lessons list */}
