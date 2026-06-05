@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getLessons, addLesson, updateLesson, deleteLesson, getStudents, getTutors, getSubjects } from '../services/db';
 import ConfirmModal from './ConfirmModal';
+import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
 
 // Conflict Checker Algorithm
@@ -531,7 +532,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
 
       {/* ================= MODAL ADD LESSON ================= */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowAddModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px' }}>
             <div className="modal-header">
               <h3 className="modal-title">Lên lịch học - Ngày {selectedDateStr.split('-').reverse().join('/')}</h3>
@@ -668,7 +669,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
           );
 
           return (
-            <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+            <div className="modal-overlay" {...handleBackdropClick(() => setShowDetailModal(false))}>
               <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '560px' }}>
                 <div className="modal-header">
                   <h3 className="modal-title">Chi tiết & Cập nhật Lịch dạy</h3>

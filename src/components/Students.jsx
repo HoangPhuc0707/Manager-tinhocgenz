@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getStudents, addStudent, updateStudent, deleteStudent, getTutors, getSubjects, getReferrals, getReceipts } from '../services/db';
 import ConfirmModal from './ConfirmModal';
+import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
  
 const Students = ({ role, activeTutorId, triggerToast }) => {
@@ -382,7 +383,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
  
       {/* ================= MODAL ADD STUDENT ================= */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowAddModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Thêm học viên mới</h3>
@@ -555,7 +556,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
  
       {/* ================= MODAL EDIT STUDENT ================= */}
       {showEditModal && selectedStudent && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowEditModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Cập nhật hồ sơ Học viên: {selectedStudent.id}</h3>
@@ -722,7 +723,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
  
       {/* ================= DRAWERS: STUDENT DETAILS ================= */}
       {activeStudentDrawer && (
-        <div className="drawer-overlay" onClick={() => setActiveStudentDrawer(null)}>
+        <div className="drawer-overlay" {...handleBackdropClick(() => setActiveStudentDrawer(null))}>
           <div className="drawer-content" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
               <div>
@@ -904,7 +905,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       `}</style>
 
       {previewImage && (
-        <div className="modal-overlay" onClick={() => setPreviewImage(null)} style={{ zIndex: 1200 }}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setPreviewImage(null))} style={{ zIndex: 1200 }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
               <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>Ảnh minh chứng giao dịch</span>

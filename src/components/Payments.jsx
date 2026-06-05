@@ -5,6 +5,7 @@ import {
   getTutors, getReferrals
 } from '../services/db';
 import ConfirmModal from './ConfirmModal';
+import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
  
 const Payments = ({ role, triggerToast }) => {
@@ -1118,7 +1119,7 @@ const Payments = ({ role, triggerToast }) => {
 
       {/* ================= MODAL PAYOUT (CHI GIA SƯ / CHI NGUỒN) ================= */}
       {showPayoutModal && (
-        <div className="modal-overlay" onClick={() => setShowPayoutModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowPayoutModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">
@@ -1242,7 +1243,7 @@ const Payments = ({ role, triggerToast }) => {
  
       {/* ================= MODAL RECEIPTS (LỊCH SỬ NỘP HỌC PHÍ) ================= */}
       {showReceiptsModal && selectedStudent && (
-        <div className="modal-overlay" onClick={() => setShowReceiptsModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowReceiptsModal(false))}>
           <div className="modal-content" style={{ maxWidth: '650px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
@@ -1397,7 +1398,7 @@ const Payments = ({ role, triggerToast }) => {
 
       {/* ================= MODAL FLAT RECEIPTS (GHI NHẬN THU HỌC PHÍ PHẲNG) ================= */}
       {showAddReceiptFlatModal && (
-        <div className="modal-overlay" onClick={() => setShowAddReceiptFlatModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowAddReceiptFlatModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Ghi nhận Thu học phí</h3>
@@ -1503,7 +1504,7 @@ const Payments = ({ role, triggerToast }) => {
 
       {/* ================= MODAL FLAT PROCESS PAY (DUYỆT CHI THANH TOÁN PHẲNG) ================= */}
       {showProcessPayFlatModal && flatPayoutToProcess && (
-        <div className="modal-overlay" onClick={() => setShowProcessPayFlatModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowProcessPayFlatModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Duyệt chi thanh toán</h3>
@@ -1663,7 +1664,7 @@ const Payments = ({ role, triggerToast }) => {
       `}</style>
       
       {previewImage && (
-        <div className="modal-overlay" onClick={() => setPreviewImage(null)} style={{ zIndex: 1100 }}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setPreviewImage(null))} style={{ zIndex: 1100 }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
               <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>Ảnh minh chứng giao dịch</span>

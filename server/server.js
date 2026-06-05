@@ -108,9 +108,7 @@ const recalculateStudent = async (studentId) => {
 
 const recalculateAllStudents = async () => {
   const students = await Student.find();
-  for (const s of students) {
-    await recalculateStudent(s.id);
-  }
+  await Promise.all(students.map(s => recalculateStudent(s.id)));
 };
 
 // Connect to MongoDB & Seed Data
@@ -118,19 +116,16 @@ mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB Atlas successfully.');
     
-    // Seed initial mock data if empty
-    const subjectsCount = await Subject.countDocuments();
-    if (subjectsCount === 0) {
-      await Subject.insertMany(MOCK_SUBJECTS);
-      await Referral.insertMany(MOCK_REFERRALS);
-      await Tutor.insertMany(MOCK_TUTORS);
-      await Student.insertMany(MOCK_STUDENTS);
-      await Receipt.insertMany(MOCK_RECEIPTS);
-      await Payout.insertMany(MOCK_PAYOUTS);
-      await Lesson.insertMany(MOCK_LESSONS);
-      await Account.insertMany(MOCK_ACCOUNTS);
-      console.log('Database seeded with initial mock data.');
-      await recalculateAllStudents();
+    // Ensure at least one Admin account exists so the user can log in
+    const adminCount = await Account.countDocuments({ role: 'Admin' });
+    if (adminCount === 0) {
+      await new Account({
+        username: 'admin',
+        password: '123',
+        role: 'Admin',
+        linkId: ''
+      }).save();
+      console.log('Default admin account created: admin / 123');
     }
   })
   .catch(err => {
@@ -261,7 +256,6 @@ app.delete('/api/tutors/:id', async (req, res) => {
 // Students CRUD
 app.get('/api/students', async (req, res) => {
   try {
-    await recalculateAllStudents();
     res.json(await Student.find());
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

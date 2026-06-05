@@ -4,6 +4,7 @@ import {
   getReferrals, addReferral, updateReferral, deleteReferral
 } from '../services/db';
 import ConfirmModal from './ConfirmModal';
+import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
 
 const getCategoryBadgeClass = (category) => {
@@ -268,7 +269,7 @@ const Settings = ({ role, triggerToast }) => {
 
       {/* ================= MODAL ADD/EDIT SUBJECT ================= */}
       {(showAddSubjectModal || showEditSubjectModal) && (
-        <div className="modal-overlay" onClick={() => { setShowAddSubjectModal(false); setShowEditSubjectModal(false); }}>
+        <div className="modal-overlay" {...handleBackdropClick(() => { setShowAddSubjectModal(false); setShowEditSubjectModal(false); })}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">
@@ -327,7 +328,7 @@ const Settings = ({ role, triggerToast }) => {
 
       {/* ================= MODAL ADD/EDIT REFERRAL ================= */}
       {(showAddReferralModal || showEditReferralModal) && (
-        <div className="modal-overlay" onClick={() => { setShowAddReferralModal(false); setShowEditReferralModal(false); }}>
+        <div className="modal-overlay" {...handleBackdropClick(() => { setShowAddReferralModal(false); setShowEditReferralModal(false); })}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">

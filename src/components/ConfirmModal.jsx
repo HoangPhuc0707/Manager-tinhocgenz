@@ -1,3 +1,4 @@
+import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
 
 const ConfirmModal = ({
@@ -24,7 +25,7 @@ const ConfirmModal = ({
   }
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1200 }} onClick={onClose}>
+    <div className="modal-overlay" style={{ zIndex: 1200 }} {...handleBackdropClick(onClose)}>
       <div className="modal-content confirm-modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-body confirm-modal-body">
           <div className="confirm-icon-wrapper" style={{ backgroundColor: iconBg, color: iconColor }}>

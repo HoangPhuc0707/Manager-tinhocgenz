@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getTutors, addTutor, updateTutor, deleteTutor, getSubjects, getStudents, getPayouts } from '../services/db';
 import ConfirmModal from './ConfirmModal';
+import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
  
 const Tutors = ({ role, triggerToast }) => {
@@ -363,7 +364,7 @@ const Tutors = ({ role, triggerToast }) => {
  
       {/* ================= MODAL ADD TUTOR ================= */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowAddModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Thêm Gia sư mới</h3>
@@ -470,7 +471,7 @@ const Tutors = ({ role, triggerToast }) => {
  
       {/* ================= MODAL EDIT TUTOR ================= */}
       {showEditModal && selectedTutor && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+        <div className="modal-overlay" {...handleBackdropClick(() => setShowEditModal(false))}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Cập nhật hồ sơ Gia sư: {selectedTutor.id}</h3>
