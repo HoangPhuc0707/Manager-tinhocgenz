@@ -49,10 +49,10 @@ const checkLessonConflicts = (lesson, allLessons, students) => {
       };
     }
 
-    // 2. Check consecutive / close: gap <= 30 mins
+    // 2. Check consecutive / close: gap < 20 mins
     // Gap = current_start - other_end OR other_start - current_end
     const gap = sTime >= oeTime ? sTime - oeTime : osTime - eTime;
-    if (gap >= 0 && gap <= 30) {
+    if (gap >= 0 && gap < 20) {
       const student = students.find(s => s.id === other.studentId);
       return {
         hasConflict: true,
