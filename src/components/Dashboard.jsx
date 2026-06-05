@@ -175,7 +175,9 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
   const getFilteredAttendanceLessons = () => {
     switch (attendanceTab) {
       case 'today':
-        return baseAttendanceLessons.filter(l => l.dateTime.split('T')[0] === todayStr);
+        return baseAttendanceLessons
+          .filter(l => l.dateTime.split('T')[0] === todayStr)
+          .sort((a, b) => a.dateTime.localeCompare(b.dateTime));
       case 'pending':
         return baseAttendanceLessons
           .filter(l => l.status === 'Chưa diễn ra')
@@ -803,7 +805,7 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
                       <div className="upcoming-details-saas">
                         <span className="class-title-saas">{student ? student.name : 'Học viên'}</span>
                         <span className="class-time-saas">
-                          {lesson.startTime || '??:??'} - {lesson.endTime || '??:??'} | {lesson.dateTime.split('T')[0]}
+                          {(lesson.dateTime.split('T')[1]?.slice(0, 5) || '19:30')} - {lesson.endTime || '21:00'} | {lesson.dateTime.split('T')[0]}
                         </span>
                         <span className="class-format-saas">
                           {student ? student.learningFormat : 'Offline'} • <span style={{ color: 'var(--text-muted)' }}>{lesson.address}</span>

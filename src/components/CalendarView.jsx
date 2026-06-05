@@ -424,9 +424,11 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   }
 
 
-  const selectedDateLessons = filteredLessons.filter(lesson => {
-    return lesson.dateTime.split('T')[0] === (selectedDateStr || formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1));
-  });
+  const selectedDateLessons = filteredLessons
+    .filter(lesson => {
+      return lesson.dateTime.split('T')[0] === (selectedDateStr || formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1));
+    })
+    .sort((a, b) => a.dateTime.localeCompare(b.dateTime));
 
   return (
     <div className="calendar-page-container">
@@ -482,9 +484,11 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
             const isToday = new Date().toDateString() === dateObj.toDateString();
             const isSelected = selectedDateStr === cell.dateStr;
 
-            const dayLessons = filteredLessons.filter(lesson => {
-              return lesson.dateTime.split('T')[0] === cell.dateStr;
-            });
+            const dayLessons = filteredLessons
+              .filter(lesson => {
+                return lesson.dateTime.split('T')[0] === cell.dateStr;
+              })
+              .sort((a, b) => a.dateTime.localeCompare(b.dateTime));
 
             return (
               <div

@@ -949,13 +949,30 @@ tr:hover td {
     gap: 16px !important;
   }
 
+  .modal-overlay {
+    padding: 12px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   .modal-content {
-    max-width: calc(100% - 24px) !important;
-    margin: 12px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    max-height: calc(100vh - 24px) !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
   
-  .modal-header, .modal-body, .modal-footer {
+  .modal-body {
     padding: 16px !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
+    max-height: none !important;
+  }
+
+  .modal-header, .modal-footer {
+    padding: 16px !important;
+    flex-shrink: 0 !important;
   }
 
   .search-filter-bar {
