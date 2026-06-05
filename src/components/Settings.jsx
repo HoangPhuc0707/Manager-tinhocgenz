@@ -51,7 +51,8 @@ const Settings = ({ role, triggerToast }) => {
 
   const [referralForm, setReferralForm] = useState({
     name: '',
-    details: ''
+    details: '',
+    isPayable: false
   });
 
   useEffect(() => {
@@ -119,13 +120,13 @@ const Settings = ({ role, triggerToast }) => {
 
   // --- ACTIONS: REFERRALS ---
   const handleAddReferralClick = () => {
-    setReferralForm({ name: '', details: '' });
+    setReferralForm({ name: '', details: '', isPayable: false });
     setShowAddReferralModal(true);
   };
 
   const handleEditReferralClick = (ref) => {
     setSelectedReferral(ref);
-    setReferralForm({ name: ref.name, details: ref.details || '' });
+    setReferralForm({ name: ref.name, details: ref.details || '', isPayable: ref.isPayable || false });
     setShowEditReferralModal(true);
   };
 
@@ -139,14 +140,16 @@ const Settings = ({ role, triggerToast }) => {
     if (isEdit && selectedReferral) {
       await updateReferral(selectedReferral.id, {
         name: referralForm.name,
-        details: referralForm.details
+        details: referralForm.details,
+        isPayable: referralForm.isPayable
       });
       triggerToast('Cập nhật nguồn giới thiệu thành công!', 'success');
       setShowEditReferralModal(false);
     } else {
       await addReferral({
         name: referralForm.name,
-        details: referralForm.details
+        details: referralForm.details,
+        isPayable: referralForm.isPayable
       });
       triggerToast('Thêm nguồn giới thiệu mới thành công!', 'success');
       setShowAddReferralModal(false);
@@ -243,6 +246,7 @@ const Settings = ({ role, triggerToast }) => {
                   <th>Mã</th>
                   <th>Tên nguồn</th>
                   <th>Thông tin chi tiết nguồn</th>
+                  <th>Chi trả hoa hồng</th>
                   <th style={{ textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
@@ -252,6 +256,13 @@ const Settings = ({ role, triggerToast }) => {
                     <td><strong>{ref.id}</strong></td>
                     <td><span className="badge badge-referral-success">{ref.name}</span></td>
                     <td>{ref.details}</td>
+                    <td>
+                      {ref.isPayable ? (
+                        <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>Có chi trả</span>
+                      ) : (
+                        <span className="badge" style={{ backgroundColor: '#e2e8f0', color: '#64748b', border: '1px solid #cbd5e1', fontSize: '0.65rem' }}>Không chi trả</span>
+                      )}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
                         <button className="btn btn-outline btn-sm" style={{ padding: '3px 6px' }} onClick={() => handleEditReferralClick(ref)}>Sửa</button>
@@ -359,6 +370,19 @@ const Settings = ({ role, triggerToast }) => {
                     value={referralForm.details}
                     onChange={e => setReferralForm({ ...referralForm, details: e.target.value })}
                   ></textarea>
+                </div>
+
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 12 }}>
+                  <input
+                    type="checkbox"
+                    id="isPayable"
+                    checked={referralForm.isPayable}
+                    onChange={e => setReferralForm({ ...referralForm, isPayable: e.target.checked })}
+                    style={{ width: 'auto', cursor: 'pointer' }}
+                  />
+                  <label className="form-label" htmlFor="isPayable" style={{ margin: 0, cursor: 'pointer', fontWeight: 600 }}>
+                    Có chi trả hoa hồng giới thiệu
+                  </label>
                 </div>
               </div>
               <div className="modal-footer">

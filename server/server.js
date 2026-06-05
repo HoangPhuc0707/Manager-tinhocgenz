@@ -42,15 +42,15 @@ const MOCK_SUBJECTS = [
 ];
 
 const MOCK_REFERRALS = [
-  { id: 'NG001', name: 'Facebook Ads', details: 'Chiến dịch quảng cáo hè 2026' },
-  { id: 'NG002', name: 'Thầy Bình Tin Học', details: 'Giáo viên THPT Phan Đình Phùng (SĐT: 0905123456)' },
-  { id: 'NG003', name: 'Tìm kiếm Google', details: 'Tìm kiếm tự nhiên từ Website trung tâm' }
+  { id: 'NG001', name: 'Facebook Ads', details: 'Chiến dịch quảng cáo hè 2026', isPayable: false },
+  { id: 'NG002', name: 'Thầy Bình Tin Học', details: 'Giáo viên THPT Phan Đình Phùng (SĐT: 0905123456)', isPayable: true },
+  { id: 'NG003', name: 'Tìm kiếm Google', details: 'Tìm kiếm tự nhiên từ Website trung tâm', isPayable: false }
 ];
 
 const MOCK_TUTORS = [
-  { id: 'GS001', name: 'Nguyễn Văn A', phone: '0912345678', email: 'tutor.a@gmail.com', address: 'Cầu Giấy, Hà Nội', status: 'Đang dạy', subjects: ['MH_PY01', 'MH_CPP01'] },
-  { id: 'GS002', name: 'Trần Thị C', phone: '0987654321', email: 'tutor.c@gmail.com', address: 'Đống Đa, Hà Nội', status: 'Chưa có lớp', subjects: ['MH_OFC01', 'MH_MOS01'] },
-  { id: 'GS003', name: 'Phạm Minh Đức', phone: '0904445556', email: 'duc.pm@gmail.com', address: 'Thanh Xuân, Hà Nội', status: 'Đang dạy', subjects: ['MH_SCR01', 'MH_PY01'] }
+  { id: 'GS001', name: 'Nguyễn Văn A', phone: '0912345678', email: 'tutor.a@gmail.com', address: 'Cầu Giấy, Hà Nội', status: 'Đang dạy', subjects: ['MH_PY01', 'MH_CPP01'], isPayable: true },
+  { id: 'GS002', name: 'Trần Thị C', phone: '0987654321', email: 'tutor.c@gmail.com', address: 'Đống Đa, Hà Nội', status: 'Chưa có lớp', subjects: ['MH_OFC01', 'MH_MOS01'], isPayable: true },
+  { id: 'GS003', name: 'Phạm Minh Đức', phone: '0904445556', email: 'duc.pm@gmail.com', address: 'Thanh Xuân, Hà Nội', status: 'Đang dạy', subjects: ['MH_SCR01', 'MH_PY01'], isPayable: true }
 ];
 
 const MOCK_STUDENTS = [

@@ -7,7 +7,8 @@ const TutorSchema = new mongoose.Schema({
   email: { type: String },
   address: { type: String },
   status: { type: String, default: 'Chưa có lớp' },
-  subjects: [{ type: String }]
+  subjects: [{ type: String }],
+  isPayable: { type: Boolean, default: true }
 });
 
 export default mongoose.model('Tutor', TutorSchema);

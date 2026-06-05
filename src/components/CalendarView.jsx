@@ -157,14 +157,16 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
     return match;
   });
 
+  const activeTutorStudents = role === 'Gia sư'
+    ? students.filter(s => s.tutorId === activeTutorId && !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status))
+    : students.filter(s => !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status));
+
   // Handle cell click
   const handleCellClick = (day) => {
     const formattedDate = formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), day);
     setSelectedDateStr(formattedDate);
 
-    const defaultStudentId = role === 'Gia sư'
-      ? (students.filter(s => s.tutorId === activeTutorId)[0]?.id || '')
-      : (students[0]?.id || '');
+    const defaultStudentId = activeTutorStudents[0]?.id || '';
 
     const student = students.find(s => s.id === defaultStudentId);
 
@@ -338,9 +340,6 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
     });
   }
 
-  const activeTutorStudents = role === 'Gia sư'
-    ? students.filter(s => s.tutorId === activeTutorId && s.status === 'Đang học')
-    : students.filter(s => s.status === 'Đang học');
 
   const selectedDateLessons = filteredLessons.filter(lesson => {
     return lesson.dateTime.split('T')[0] === (selectedDateStr || formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1));

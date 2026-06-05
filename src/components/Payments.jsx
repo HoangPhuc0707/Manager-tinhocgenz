@@ -134,6 +134,16 @@ const Payments = ({ role, triggerToast }) => {
  
     const t = type === 'Gia sư' ? tutors.find(t => t.id === recipientId) : null;
     const r = type !== 'Gia sư' ? referrals.find(r => r.id === recipientId) : null;
+ 
+    if (type === 'Gia sư' && t && !t.isPayable) {
+      triggerToast('Giáo viên này được cấu hình không chi trả lương!', 'warning');
+      return;
+    }
+ 
+    if (type === 'Nguồn giới thiệu' && r && !r.isPayable) {
+      triggerToast('Nguồn giới thiệu này được cấu hình không chi trả hoa hồng!', 'warning');
+      return;
+    }
     const recipientName = type === 'Gia sư'
       ? (t ? `${t.id} - ${t.name}` : recipientId)
       : (r ? `${r.id} - ${r.name}` : recipientId);
@@ -185,6 +195,24 @@ const Payments = ({ role, triggerToast }) => {
     if (!amount || Number(amount) <= 0) {
       triggerToast('Vui lòng nhập số tiền chi phí hợp lệ!', 'danger');
       return;
+    }
+ 
+    if (type === 'Gia sư') {
+      const student = students.find(s => s.id === studentId);
+      const t = student ? tutors.find(tut => tut.id === student.tutorId) : null;
+      if (t && !t.isPayable) {
+        triggerToast('Không thể tạo phiếu chi cho Giáo viên không chi trả lương!', 'danger');
+        return;
+      }
+    }
+ 
+    if (type === 'Nguồn giới thiệu') {
+      const student = students.find(s => s.id === studentId);
+      const r = student ? referrals.find(ref => ref.id === student.referralId) : null;
+      if (r && !r.isPayable) {
+        triggerToast('Không thể tạo phiếu chi cho Nguồn giới thiệu không chi trả hoa hồng!', 'danger');
+        return;
+      }
     }
  
     try {
@@ -492,10 +520,12 @@ const Payments = ({ role, triggerToast }) => {
   const filteredCardStudents = searchedStudents.filter(s => {
     const tutorPayout = payouts.find(p => p.studentId === s.id && p.type === 'Gia sư');
     const refPayout = payouts.find(p => p.studentId === s.id && p.type === 'Nguồn giới thiệu');
+    const ref = referrals.find(r => r.id === s.referralId);
+    const tutor = tutors.find(t => t.id === s.tutorId);
     
     const isTuitionPaid = s.debtTuition === 0;
-    const isTutorPaid = tutorPayout ? tutorPayout.status === 'Đã thanh toán' : false;
-    const isRefPaid = refPayout ? refPayout.status === 'Đã thanh toán' : true; // If no referral, consider paid
+    const isTutorPaid = (!tutor || !tutor.isPayable) ? true : (tutorPayout ? tutorPayout.status === 'Đã thanh toán' : false);
+    const isRefPaid = (!ref || !ref.isPayable) ? true : (refPayout ? refPayout.status === 'Đã thanh toán' : false);
     
     // 1. Tuition filter
     if (cardTuitionFilter === 'paid' && !isTuitionPaid) return false;
@@ -537,13 +567,25 @@ const Payments = ({ role, triggerToast }) => {
     const bTutorPayout = payouts.find(p => p.studentId === b.id && p.type === 'Gia sư');
     const bRefPayout = payouts.find(p => p.studentId === b.id && p.type === 'Nguồn giới thiệu');
  
+    const aRef = referrals.find(r => r.id === a.referralId);
+    const aRefNeedsPayout = aRef && aRef.isPayable && (!aRefPayout || aRefPayout.status === 'Chưa thanh toán');
+ 
+    const bRef = referrals.find(r => r.id === b.referralId);
+    const bRefNeedsPayout = bRef && bRef.isPayable && (!bRefPayout || bRefPayout.status === 'Chưa thanh toán');
+ 
+    const aTutor = tutors.find(t => t.id === a.tutorId);
+    const aTutorNeedsPayout = aTutor && aTutor.isPayable && (!aTutorPayout || aTutorPayout.status === 'Chưa thanh toán');
+ 
+    const bTutor = tutors.find(t => t.id === b.tutorId);
+    const bTutorNeedsPayout = bTutor && bTutor.isPayable && (!bTutorPayout || bTutorPayout.status === 'Chưa thanh toán');
+ 
     const aNeedsAction = a.debtTuition > 0 || 
-      (aTutorPayout && aTutorPayout.status === 'Chưa thanh toán') || 
-      (aRefPayout && aRefPayout.status === 'Chưa thanh toán');
+      aTutorNeedsPayout || 
+      aRefNeedsPayout;
     
     const bNeedsAction = b.debtTuition > 0 || 
-      (bTutorPayout && bTutorPayout.status === 'Chưa thanh toán') || 
-      (bRefPayout && bRefPayout.status === 'Chưa thanh toán');
+      bTutorNeedsPayout || 
+      bRefNeedsPayout;
  
     if (aNeedsAction && !bNeedsAction) return -1;
     if (!aNeedsAction && bNeedsAction) return 1;
@@ -554,10 +596,12 @@ const Payments = ({ role, triggerToast }) => {
   const getFinancialStatus = (s) => {
     const tutorPayout = payouts.find(p => p.studentId === s.id && p.type === 'Gia sư');
     const refPayout = payouts.find(p => p.studentId === s.id && p.type === 'Nguồn giới thiệu');
+    const ref = referrals.find(r => r.id === s.referralId);
+    const tutor = tutors.find(t => t.id === s.tutorId);
     
     const isTuitionPaid = s.debtTuition === 0;
-    const isTutorPaid = tutorPayout ? tutorPayout.status === 'Đã thanh toán' : false;
-    const isRefPaid = refPayout ? refPayout.status === 'Đã thanh toán' : true;
+    const isTutorPaid = (!tutor || !tutor.isPayable) ? true : (tutorPayout ? tutorPayout.status === 'Đã thanh toán' : false);
+    const isRefPaid = (!ref || !ref.isPayable) ? true : (refPayout ? refPayout.status === 'Đã thanh toán' : false);
     
     if (isTuitionPaid && isTutorPaid && isRefPaid) {
       return { label: 'Đã hoàn thành', badgeClass: 'badge-success' };
@@ -566,8 +610,8 @@ const Payments = ({ role, triggerToast }) => {
       return { label: 'Đã thanh toán', badgeClass: 'badge-success' };
     }
     
-    const tutorPending = tutorPayout ? tutorPayout.status === 'Chưa thanh toán' : false;
-    const refPending = refPayout ? refPayout.status === 'Chưa thanh toán' : false;
+    const tutorPending = tutor && tutor.isPayable && (!tutorPayout || tutorPayout.status === 'Chưa thanh toán');
+    const refPending = ref && ref.isPayable && (!refPayout || refPayout.status === 'Chưa thanh toán');
     
     if (tutorPending || refPending) {
       return { label: 'Chờ đề xuất', badgeClass: 'badge-warning' };
@@ -765,13 +809,21 @@ const Payments = ({ role, triggerToast }) => {
                     <div className="payout-box-saas">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Chi Gia sư:</span>
-                        <span className={`badge ${tutorPayout?.status === 'Đã thanh toán' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
-                          {tutorPayout ? tutorPayout.status : 'Chưa chi'}
-                        </span>
+                        {(!tutor || !tutor.isPayable) ? (
+                          <span className="badge" style={{ backgroundColor: '#e2e8f0', color: '#475569', border: '1px solid #cbd5e1', fontSize: '0.65rem', padding: '1px 5px', opacity: 0.8 }}>
+                            GV Trung tâm
+                          </span>
+                        ) : (
+                          <span className={`badge ${tutorPayout?.status === 'Đã thanh toán' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                            {tutorPayout ? tutorPayout.status : 'Chưa chi'}
+                          </span>
+                        )}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.78rem' }}>{tutorPayout ? formatCurrency(tutorPayout.amount) : '0 đ'}</span>
-                        {role === 'Admin' && (
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', opacity: (!tutor || !tutor.isPayable) ? 0.5 : 1 }}>
+                          {tutorPayout ? formatCurrency(tutorPayout.amount) : '0 đ'}
+                        </span>
+                        {role === 'Admin' && tutor && tutor.isPayable && (
                           <button className="btn btn-outline btn-sm" style={{ padding: '1px 5px', fontSize: '0.65rem' }} onClick={() => handleOpenPayoutModal(s, 'Gia sư')}>
                             {tutorPayout ? 'Sửa' : 'Tạo'}
                           </button>
@@ -784,13 +836,21 @@ const Payments = ({ role, triggerToast }) => {
                     <div className="payout-box-saas">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Chi Nguồn:</span>
-                        <span className={`badge ${refPayout?.status === 'Đã thanh toán' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
-                          {refPayout ? refPayout.status : 'Chưa chi'}
-                        </span>
+                        {(!ref || !ref.isPayable) ? (
+                          <span className="badge" style={{ backgroundColor: '#e2e8f0', color: '#475569', border: '1px solid #cbd5e1', fontSize: '0.65rem', padding: '1px 5px', opacity: 0.8 }}>
+                            Không chi
+                          </span>
+                        ) : (
+                          <span className={`badge ${refPayout?.status === 'Đã thanh toán' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                            {refPayout ? refPayout.status : 'Chưa chi'}
+                          </span>
+                        )}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.78rem' }}>{refPayout ? formatCurrency(refPayout.amount) : '0 đ'}</span>
-                        {role === 'Admin' && (
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', opacity: (!ref || !ref.isPayable) ? 0.5 : 1 }}>
+                          {refPayout ? formatCurrency(refPayout.amount) : '0 đ'}
+                        </span>
+                        {role === 'Admin' && ref && ref.isPayable && (
                           <button className="btn btn-outline btn-sm" style={{ padding: '1px 5px', fontSize: '0.65rem' }} onClick={() => handleOpenPayoutModal(s, 'Nguồn giới thiệu')}>
                             {refPayout ? 'Sửa' : 'Tạo'}
                           </button>
@@ -1168,6 +1228,30 @@ const Payments = ({ role, triggerToast }) => {
                   <div className="form-group">
                     <label className="form-label">Người nhận chi phí</label>
                     <input type="text" className="form-control" value={payoutModalConfig.recipientName} disabled />
+                    {payoutModalConfig.type === 'Gia sư' && payoutModalConfig.studentId && (() => {
+                      const student = students.find(s => s.id === payoutModalConfig.studentId);
+                      const tutor = student ? tutors.find(t => t.id === student.tutorId) : null;
+                      if (tutor && !tutor.isPayable) {
+                        return (
+                          <div style={{ color: 'var(--danger)', fontSize: '0.68rem', marginTop: 4, fontWeight: 600 }}>
+                            ⚠️ Giáo viên này được cấu hình không chi trả lương!
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {payoutModalConfig.type === 'Nguồn giới thiệu' && payoutModalConfig.studentId && (() => {
+                      const student = students.find(s => s.id === payoutModalConfig.studentId);
+                      const ref = student ? referrals.find(r => r.id === student.referralId) : null;
+                      if (ref && !ref.isPayable) {
+                        return (
+                          <div style={{ color: 'var(--danger)', fontSize: '0.68rem', marginTop: 4, fontWeight: 600 }}>
+                            ⚠️ Nguồn giới thiệu này được cấu hình không chi trả hoa hồng!
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
  

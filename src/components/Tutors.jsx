@@ -30,7 +30,8 @@ const Tutors = ({ role, triggerToast }) => {
     email: '',
     address: '',
     status: 'Chưa có lớp',
-    subjects: [] // array of subject ids
+    subjects: [], // array of subject ids
+    isPayable: true
   });
  
   useEffect(() => {
@@ -94,7 +95,8 @@ const Tutors = ({ role, triggerToast }) => {
       email: '',
       address: '',
       status: 'Chưa có lớp',
-      subjects: []
+      subjects: [],
+      isPayable: true
     });
     setShowAddModal(true);
   };
@@ -109,7 +111,8 @@ const Tutors = ({ role, triggerToast }) => {
       email: tutor.email,
       address: tutor.address,
       status: tutor.status,
-      subjects: tutor.subjects || []
+      subjects: tutor.subjects || [],
+      isPayable: tutor.isPayable !== undefined ? tutor.isPayable : true
     });
     setShowEditModal(true);
   };
@@ -320,6 +323,14 @@ const Tutors = ({ role, triggerToast }) => {
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t.age || calculateAge(t.dob) || '??'} tuổi</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Phân loại:</span>
+                  {t.isPayable !== false ? (
+                    <span style={{ fontWeight: 700, color: 'var(--primary)' }}>GV ngoài (Trả lương)</span>
+                  ) : (
+                    <span style={{ fontWeight: 700, color: 'var(--success)' }}>GV trung tâm</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Số lớp phụ trách:</span>
                   <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{tutorStudents.length} lớp học</span>
                 </div>
@@ -459,6 +470,18 @@ const Tutors = ({ role, triggerToast }) => {
                     ))}
                   </div>
                 </div>
+
+                <div className="form-group" style={{ marginTop: 12 }}>
+                  <label className="form-label">Phân loại Giáo viên (Hình thức chi trả)</label>
+                  <select
+                    className="form-control"
+                    value={form.isPayable ? "external" : "center"}
+                    onChange={e => setForm({ ...form, isPayable: e.target.value === "external" })}
+                  >
+                    <option value="external">Giáo viên ngoài (Chi trả lương)</option>
+                    <option value="center">Giáo viên trung tâm (Không chi trả - Tính vào doanh thu)</option>
+                  </select>
+                </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setShowAddModal(false)}>Hủy</button>
@@ -561,6 +584,18 @@ const Tutors = ({ role, triggerToast }) => {
                       </label>
                     ))}
                   </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: 12 }}>
+                  <label className="form-label">Phân loại Giáo viên (Hình thức chi trả)</label>
+                  <select
+                    className="form-control"
+                    value={form.isPayable ? "external" : "center"}
+                    onChange={e => setForm({ ...form, isPayable: e.target.value === "external" })}
+                  >
+                    <option value="external">Giáo viên ngoài (Chi trả lương)</option>
+                    <option value="center">Giáo viên trung tâm (Không chi trả - Tính vào doanh thu)</option>
+                  </select>
                 </div>
               </div>
               <div className="modal-footer">
