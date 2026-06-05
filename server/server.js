@@ -112,7 +112,7 @@ const recalculateAllStudents = async () => {
 };
 
 // Connect to MongoDB & Seed Data
-mongoose.connect(MONGODB_URI)
+mongoose.connect(MONGODB_URI, { family: 4 })
   .then(async () => {
     console.log('Connected to MongoDB Atlas successfully.');
     
