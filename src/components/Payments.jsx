@@ -1002,7 +1002,7 @@ const Payments = ({ role, triggerToast }) => {
           {/* Table Container */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             {activeSubTab === 'receipts' ? (
-              <div className="table-responsive" style={{ margin: 0, border: 'none', maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+              <div className="table-responsive" style={{ margin: 0, border: 'none', maxHeight: 'calc(100vh - 280px)', overflowY: 'auto', overflowX: 'auto' }}>
                 <table>
                   <thead>
                     <tr>
@@ -1073,7 +1073,7 @@ const Payments = ({ role, triggerToast }) => {
                 </table>
               </div>
             ) : (
-              <div className="table-responsive" style={{ margin: 0, border: 'none', maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+              <div className="table-responsive" style={{ margin: 0, border: 'none', maxHeight: 'calc(100vh - 280px)', overflowY: 'auto', overflowX: 'auto' }}>
                 <table>
                   <thead>
                     <tr>

@@ -274,7 +274,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
 
       {/* CRM-Style Data Table */}
       <div className="card" style={{ marginTop: 20, padding: 0, overflow: 'hidden' }}>
-        <div className="table-responsive" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+        <div className="table-responsive" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto', overflowX: 'auto' }}>
           <table className="table-sticky-header table-row-tall">
             <thead>
               <tr>
