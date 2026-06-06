@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getLessons, addLesson, updateLesson, deleteLesson, getStudents, getTutors, getSubjects, addLessonsBatch } from '../services/db';
+import { getLessons, updateLesson, deleteLesson, getStudents, getTutors, getSubjects, addLessonsBatch } from '../services/db';
 import ConfirmModal from './ConfirmModal';
 import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
@@ -119,6 +119,36 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
     time: '',
     endTime: ''
   });
+
+  const [showSyncInfo, setShowSyncInfo] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Resolve base API url
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 
+    (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:5000/api'
+      : '/api');
+
+  // Construct standard calendar feed URLs
+  const getAbsoluteFeedUrl = (isWebcal = false) => {
+    if (!activeTutorId) return '';
+    const feedUrl = apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith('https://')
+      ? `${apiBaseUrl}/calendar/feed/${activeTutorId}.ics`
+      : `${window.location.origin}${apiBaseUrl}/calendar/feed/${activeTutorId}.ics`;
+    
+    if (isWebcal) {
+      return feedUrl.replace(/^https?:\/\//i, 'webcal://');
+    }
+    return feedUrl;
+  };
+
+  const handleCopyUrl = () => {
+    const url = getAbsoluteFeedUrl(false);
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    triggerToast('Đã sao chép liên kết đồng bộ lịch!', 'success');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -445,6 +475,95 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
           </div>
         </div>
       </div>
+
+      {/* Calendar Sync Widget */}
+      {role === 'Gia sư' && activeTutorId && (
+        <div className="calendar-sync-widget card" style={{ marginBottom: 20, padding: '16px 20px', borderLeft: '4px solid var(--primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: '1.4rem' }}>📅</span>
+              <div>
+                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                  Đồng bộ lịch dạy với iPhone & Google Calendar
+                </h4>
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                  Lịch học sẽ tự động cập nhật trên điện thoại của bạn mỗi khi bạn lên lịch mới.
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button 
+                type="button"
+                className="btn btn-secondary btn-sm" 
+                onClick={() => setShowSyncInfo(!showSyncInfo)}
+                style={{ height: '32px', borderRadius: '8px' }}
+              >
+                {showSyncInfo ? 'Đóng hướng dẫn' : 'Thiết lập ngay'}
+              </button>
+            </div>
+          </div>
+
+          {showSyncInfo && (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-color)', animation: 'fadeIn 0.25s ease' }}>
+              <div className="grid-2">
+                {/* Method 1: iPhone / Apple Calendar */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <h5 style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>🍎</span> Cách 1: Đồng bộ trực tiếp với iPhone (Apple Calendar)
+                  </h5>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                    Nhập trực tiếp từ iPhone của bạn bằng Safari và nhấn nút bên dưới để tự động thêm lịch dạy.
+                  </p>
+                  <a 
+                    href={getAbsoluteFeedUrl(true)}
+                    className="btn btn-primary btn-sm"
+                    style={{ alignSelf: 'flex-start', marginTop: 4, height: '32px', borderRadius: '8px', textDecoration: 'none' }}
+                  >
+                    📲 Đồng bộ nhanh trên iPhone
+                  </a>
+                </div>
+
+                {/* Method 2: Google Calendar / Others */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: '8px' }}>
+                  <h5 style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--success)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>🤖</span> Cách 2: Đồng bộ với Google Calendar / Android
+                  </h5>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                    Sao chép đường dẫn bên dưới, mở <strong>Google Calendar</strong> trên web, chọn <strong>"Lịch khác" (+)</strong> &rarr; Chọn <strong>"Từ URL"</strong> và dán vào.
+                  </p>
+                  
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={getAbsoluteFeedUrl(false)} 
+                      readOnly 
+                      onClick={(e) => e.target.select()}
+                      style={{ fontSize: '0.68rem', padding: '6px 10px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    />
+                    <button 
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleCopyUrl}
+                      style={{ height: '32px', whiteSpace: 'nowrap', borderRadius: '8px', borderColor: copied ? 'var(--success)' : 'var(--border-color)', color: copied ? 'var(--success)' : 'var(--text-primary)' }}
+                    >
+                      {copied ? '✓ Đã sao chép' : 'Sao chép'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* IOS Step-by-step note */}
+              <div style={{ marginTop: 16, padding: '10px 14px', backgroundColor: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                  <strong>💡 Hướng dẫn thêm Lịch thủ công trên iPhone (nếu không dùng được nút đồng bộ nhanh):</strong><br />
+                  Vào <strong>Cài đặt</strong> trên iPhone &rarr; Chọn <strong>Lịch</strong> &rarr; <strong>Tài khoản</strong> &rarr; <strong>Thêm tài khoản</strong> &rarr; Chọn <strong>Khác</strong> &rarr; Chọn <strong>Thêm Lịch đã đăng ký</strong> &rarr; Dán đường dẫn đã sao chép ở trên và nhấn <strong>Lưu</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Admin Filters */}
       {role === 'Admin' && (

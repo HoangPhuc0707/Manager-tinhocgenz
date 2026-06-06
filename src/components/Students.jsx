@@ -3,7 +3,7 @@ import { getStudents, addStudent, updateStudent, deleteStudent, getTutors, getSu
 import ConfirmModal from './ConfirmModal';
 import { handleBackdropClick } from '../utils/modalHelper';
 import '../styles/theme.css';
- 
+
 const Students = ({ role, activeTutorId, triggerToast }) => {
   const [students, setStudents] = useState([]);
   const [tutors, setTutors] = useState([]);
@@ -11,24 +11,24 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
   const [referrals, setReferrals] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
- 
+
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
   const [tutorFilter, setTutorFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
- 
+
   // Modals / Drawer
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [activeStudentDrawer, setActiveStudentDrawer] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
- 
+
   // Confirm Delete Modal
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
- 
+
   // Form State
   const [form, setForm] = useState({
     name: '',
@@ -44,7 +44,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
     totalTuition: 3000000,
     status: 'Đang học'
   });
- 
+
   useEffect(() => {
     const fetchData = async () => {
       const list = await getStudents();
@@ -52,7 +52,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       const sList = await getSubjects();
       const rList = await getReferrals();
       const recs = await getReceipts();
- 
+
       setStudents(list);
       setTutors(tList);
       setSubjects(sList);
@@ -61,12 +61,12 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
     };
     fetchData();
   }, [role, activeTutorId, refreshTrigger]);
- 
+
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
   const handleSubjectFilterChange = (e) => setSubjectFilter(e.target.value);
   const handleTutorFilterChange = (e) => setTutorFilter(e.target.value);
   const handleStatusFilterChange = (e) => setStatusFilter(e.target.value);
- 
+
   // Add click
   const handleAddClick = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -86,7 +86,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
     });
     setShowAddModal(true);
   };
- 
+
   // Edit click
   const handleEditClick = (student) => {
     setSelectedStudent(student);
@@ -106,7 +106,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
     });
     setShowEditModal(true);
   };
- 
+
   // Subject change inside Form (auto-populate expected tuition)
   const handleFormSubjectChange = (e) => {
     const subId = e.target.value;
@@ -117,7 +117,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       totalTuition: selectedSub ? selectedSub.tuition : form.totalTuition
     });
   };
- 
+
   // Add submit
   const handleAddSubmit = async (e) => {
     e.preventDefault();
@@ -125,7 +125,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       triggerToast('Vui lòng nhập đầy đủ các thông tin bắt buộc!', 'danger');
       return;
     }
- 
+
     try {
       await addStudent({
         ...form,
@@ -140,12 +140,12 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       triggerToast(err.message, 'danger');
     }
   };
- 
+
   // Edit submit
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedStudent) return;
- 
+
     try {
       await updateStudent(selectedStudent.id, {
         ...form,
@@ -155,7 +155,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       });
       triggerToast('Cập nhật hồ sơ học viên thành công!', 'success');
       setShowEditModal(false);
-      
+
       // Update drawer state if active
       if (activeStudentDrawer && activeStudentDrawer.id === selectedStudent.id) {
         const updated = {
@@ -167,19 +167,19 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
         };
         setActiveStudentDrawer(updated);
       }
- 
+
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       triggerToast(err.message, 'danger');
     }
   };
- 
+
   // Delete click
   const handleDeleteClick = (id) => {
     setStudentToDelete(id);
     setConfirmOpen(true);
   };
- 
+
   const handleConfirmDelete = async () => {
     if (studentToDelete) {
       await deleteStudent(studentToDelete);
@@ -192,29 +192,29 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       setRefreshTrigger(prev => prev + 1);
     }
   };
- 
+
   // Filter students based on role and filters
   const visibleStudents = role === 'Gia sư'
     ? students.filter(s => s.tutorId === activeTutorId)
     : students;
- 
+
   const filteredStudents = visibleStudents.filter(s => {
     const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.phone.includes(searchTerm);
-    
+
     const matchSubject = subjectFilter ? s.subjectId === subjectFilter : true;
     const matchTutor = tutorFilter ? s.tutorId === tutorFilter : true;
     const matchStatus = statusFilter ? s.status === statusFilter : true;
- 
+
     return matchSearch && matchSubject && matchTutor && matchStatus;
   });
- 
+
   const formatCurrency = (val) => {
     return val ? val.toLocaleString('vi-VN') + ' đ' : '0 đ';
   };
- 
 
- 
+
+
   return (
     <div className="students-container">
       <div className="page-header">
@@ -230,7 +230,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
           </div>
         )}
       </div>
- 
+
       {/* Filter bar */}
       <div className="search-filter-bar card" style={{ padding: 16 }}>
         <div className="search-input-wrapper">
@@ -271,18 +271,18 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
           </select>
         </div>
       </div>
- 
+
       {/* CRM-Style Data Table */}
       <div className="card" style={{ marginTop: 20, padding: 0, overflow: 'hidden' }}>
         <div className="table-responsive" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
           <table className="table-sticky-header table-row-tall">
             <thead>
               <tr>
-                <th>Mã HV<br/>Tên HV</th>
+                <th>Mã HV<br />Tên HV</th>
                 <th>SĐT</th>
                 <th>Tuổi</th>
-                <th>Môn học<br/>Hình thức</th>
-                <th>Gia sư<br/>Nguồn</th>
+                <th>Môn học<br />Hình thức</th>
+                <th>Gia sư<br />Nguồn</th>
                 {role === 'Admin' && (
                   <>
                     <th>Tổng HP</th>
@@ -299,18 +299,12 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                 const sub = subjects.find(sub => sub.id === s.subjectId);
                 const tutor = tutors.find(t => t.id === s.tutorId);
                 const ref = referrals.find(r => r.id === s.referralId);
- 
+
                 let statusBadge = 'badge-primary';
                 let statusText = s.status;
                 if (s.status === 'Đang học') {
                   statusBadge = 'badge-success';
                   statusText = 'Đang học';
-                } else if (s.status === 'Học thử') {
-                  statusBadge = 'badge-primary';
-                  statusText = 'Học thử';
-                } else if (s.status === 'Đang tìm gia sư') {
-                  statusBadge = 'badge-warning';
-                  statusText = 'Chờ xếp lớp';
                 } else if (s.status === 'Tạm dừng') {
                   statusBadge = 'badge-danger';
                   statusText = 'Tạm nghỉ';
@@ -318,7 +312,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                   statusBadge = 'badge-success';
                   statusText = 'Tốt nghiệp';
                 }
- 
+
                 return (
                   <tr key={s.id} className="crm-table-row" onClick={() => setActiveStudentDrawer(s)} style={{ cursor: 'pointer' }}>
                     <td>
@@ -380,7 +374,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
           </table>
         </div>
       </div>
- 
+
       {/* ================= MODAL ADD STUDENT ================= */}
       {showAddModal && (
         <div className="modal-overlay" {...handleBackdropClick(() => setShowAddModal(false))}>
@@ -402,7 +396,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     required
                   />
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Số điện thoại *</label>
@@ -426,7 +420,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     />
                   </div>
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Môn học đăng ký *</label>
@@ -453,7 +447,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     />
                   </div>
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Số buổi dự kiến</label>
@@ -476,7 +470,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     />
                   </div>
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Hình thức học</label>
@@ -504,7 +498,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     </select>
                   </div>
                 </div>
- 
+
                 <div className="form-group">
                   <label className="form-label">Địa chỉ nhà học sinh / Link học Online</label>
                   <input
@@ -515,7 +509,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     onChange={e => setForm({ ...form, address: e.target.value })}
                   />
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Gia sư phụ trách</label>
@@ -553,7 +547,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
           </div>
         </div>
       )}
- 
+
       {/* ================= MODAL EDIT STUDENT ================= */}
       {showEditModal && selectedStudent && (
         <div className="modal-overlay" {...handleBackdropClick(() => setShowEditModal(false))}>
@@ -574,7 +568,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     required
                   />
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Số điện thoại *</label>
@@ -596,7 +590,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     />
                   </div>
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Môn học đăng ký *</label>
@@ -622,7 +616,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     />
                   </div>
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Số buổi dự kiến</label>
@@ -644,7 +638,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     />
                   </div>
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Hình thức học</label>
@@ -672,7 +666,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     </select>
                   </div>
                 </div>
- 
+
                 <div className="form-group">
                   <label className="form-label">Địa chỉ nhà học sinh / Link học Online</label>
                   <input
@@ -682,7 +676,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     onChange={e => setForm({ ...form, address: e.target.value })}
                   />
                 </div>
- 
+
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Gia sư phụ trách</label>
@@ -720,7 +714,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
           </div>
         </div>
       )}
- 
+
       {/* ================= DRAWERS: STUDENT DETAILS ================= */}
       {activeStudentDrawer && (
         <div className="drawer-overlay" {...handleBackdropClick(() => setActiveStudentDrawer(null))}>
@@ -731,15 +725,15 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
               </div>
               <button className="modal-close" onClick={() => setActiveStudentDrawer(null)}>&times;</button>
             </div>
-            
+
             <div className="drawer-body">
               {/* Profile Overview */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Mã số: {activeStudentDrawer.id} | Ngày đăng ký: {activeStudentDrawer.registerDate}</div>
               </div>
- 
+
               <hr style={{ border: 'none', borderBottom: '1px solid var(--border-color)', margin: '16px 0' }} />
- 
+
               {/* Personal Info Grid */}
               <h4 style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>Thông tin liên hệ & Lớp học</h4>
               <div className="detail-grid" style={{ rowGap: 14 }}>
@@ -778,9 +772,9 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                   </span>
                 </div>
               </div>
- 
+
               <hr style={{ border: 'none', borderBottom: '1px solid var(--border-color)', margin: '20px 0' }} />
- 
+
               {/* Learning Progress */}
               <h4 style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>Tiến độ học tập</h4>
               <div style={{ backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid var(--border-color)' }}>
@@ -802,7 +796,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
               {role === 'Admin' && (
                 <>
                   <hr style={{ border: 'none', borderBottom: '1px solid var(--border-color)', margin: '20px 0' }} />
- 
+
                   {/* Financial Status Summary */}
                   <h4 style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>Trạng thái tài chính học phí</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -820,12 +814,12 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                         <span className="detail-value text-danger" style={{ color: activeStudentDrawer.debtTuition > 0 ? 'var(--danger)' : 'var(--success)' }}>{formatCurrency(activeStudentDrawer.debtTuition)}</span>
                       </div>
                     </div>
- 
+
                     {/* Financial Progress Bar */}
                     <div className="progress-bar-container" style={{ height: 6 }}>
                       <div className="progress-bar-fill" style={{ backgroundColor: 'var(--primary)', width: `${Math.min(100, (activeStudentDrawer.paidTuition / activeStudentDrawer.totalTuition) * 100)}%` }}></div>
                     </div>
- 
+
                     {/* Receipts Log Timeline inside Drawer */}
                     <div style={{ marginTop: 10 }}>
                       <span className="detail-label" style={{ marginBottom: 6, display: 'block' }}>Lịch sử giao dịch đóng phí</span>
@@ -836,9 +830,9 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                               <span style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 {r.id}
                                 {r.proofImg && (
-                                  <span 
-                                    title="Xem ảnh minh chứng" 
-                                    style={{ cursor: 'pointer', fontSize: '0.75rem', color: 'var(--primary)', display: 'inline-flex' }} 
+                                  <span
+                                    title="Xem ảnh minh chứng"
+                                    style={{ cursor: 'pointer', fontSize: '0.75rem', color: 'var(--primary)', display: 'inline-flex' }}
                                     onClick={() => setPreviewImage(r.proofImg)}
                                   >
                                     🖼️
@@ -859,7 +853,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                 </>
               )}
             </div>
- 
+
             <div className="drawer-footer">
               <button className="btn btn-outline" onClick={() => setActiveStudentDrawer(null)}>Đóng</button>
               {role === 'Admin' && (
@@ -869,7 +863,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
           </div>
         </div>
       )}
- 
+
       {/* ================= CONFIRM DELETE MODAL ================= */}
       <ConfirmModal
         isOpen={confirmOpen}
@@ -881,7 +875,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
         cancelText="Hủy"
         type="danger"
       />
- 
+
       <style>{`
         .crm-avatar {
           width: 32px;
@@ -919,5 +913,5 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
     </div>
   );
 };
- 
+
 export default Students;

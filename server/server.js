@@ -1,4 +1,5 @@
 /* global process */
+/* eslint-disable no-unused-vars */
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -519,6 +520,143 @@ app.delete('/api/lessons/:id', async (req, res) => {
     }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Calendar feed for tutors (iPhone/Google Calendar sync)
+app.get('/api/calendar/feed/:tutorId.ics', async (req, res) => {
+  try {
+    const { tutorId } = req.params;
+
+    // Remove the .ics extension if it was passed in the param
+    const cleanTutorId = tutorId.replace(/\.ics$/i, '');
+
+    const tutor = await Tutor.findOne({ id: cleanTutorId });
+    if (!tutor) {
+      return res.status(404).send('Tutor not found');
+    }
+
+    const lessons = await Lesson.find({ tutorId: cleanTutorId });
+    const studentIds = [...new Set(lessons.map(l => l.studentId))];
+    const students = await Student.find({ id: { $in: studentIds } });
+    const studentMap = {};
+    students.forEach(s => {
+      studentMap[s.id] = s;
+    });
+
+    const subjects = await Subject.find({});
+    const subjectMap = {};
+    subjects.forEach(sub => {
+      subjectMap[sub.id] = sub;
+    });
+
+    const formatICSDate = (dateTimeStr, isEndTime = false, fallbackTime = '21:00') => {
+      if (!dateTimeStr) return '';
+      const parts = dateTimeStr.split('T');
+      const datePart = parts[0];
+      let timePart = parts[1];
+
+      if (isEndTime) {
+        timePart = fallbackTime;
+      }
+
+      const yyyymmdd = datePart.replace(/-/g, '');
+      const hhmmss = timePart ? timePart.replace(/:/g, '').slice(0, 4) + '00' : '000000';
+      return `${yyyymmdd}T${hhmmss}`;
+    };
+
+    const escapeICS = (str) => {
+      if (!str) return '';
+      return str
+        .replace(/\\/g, '\\\\')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '');
+    };
+
+    const foldLine = (line) => {
+      if (line.length <= 75) return line;
+      const parts = [];
+      parts.push(line.substring(0, 75));
+      let index = 75;
+      while (index < line.length) {
+        parts.push(' ' + line.substring(index, index + 74));
+        index += 74;
+      }
+      return parts.join('\r\n');
+    };
+
+    const ics = [];
+    ics.push('BEGIN:VCALENDAR');
+    ics.push('VERSION:2.0');
+    ics.push('PRODID:-//Tin Hoc GenZ//Tutor Calendar Feed//VI');
+    ics.push('CALSCALE:GREGORIAN');
+    ics.push('METHOD:PUBLISH');
+    ics.push(`X-WR-CALNAME:Lich day - Gia su ${tutor.name}`);
+    ics.push('X-WR-TIMEZONE:Asia/Ho_Chi_Minh');
+    ics.push('X-WR-CALDESC:Lich day gia su tu dong dong bo tu Tin Hoc GenZ');
+
+    const nowStr = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+    for (const lesson of lessons) {
+      const student = studentMap[lesson.studentId];
+      const subject = student ? subjectMap[student.subjectId] : null;
+
+      const studentName = student ? student.name : lesson.studentId;
+      const subjectName = subject ? subject.name : 'Mon hoc';
+
+      const dtstart = formatICSDate(lesson.dateTime);
+      const dtend = formatICSDate(lesson.dateTime, true, lesson.endTime || '21:00');
+
+      let location = '';
+      if (lesson.learningFormat === 'Online') {
+        location = lesson.address || 'Hoc Online';
+      } else {
+        location = lesson.address || (student ? student.address : 'Hoc Offline');
+      }
+
+      let statusLabel = 'Lịch dạy';
+      if (lesson.status === 'Có học') statusLabel = 'Đã dạy';
+      if (lesson.status === 'Vắng học / Hủy buổi') statusLabel = 'Hủy dạy';
+
+      const descriptionLines = [
+        `Học viên: ${studentName}`,
+        `Môn học: ${subjectName}`,
+        `Hình thức: ${lesson.learningFormat}`,
+        `Địa điểm: ${lesson.address || (student ? student.address : 'Chưa cập nhật')}`,
+        `Trạng thái: ${lesson.status}`,
+        `Ghi chú: ${lesson.note || 'Không có ghi chú'}`
+      ];
+
+      const escapedSummary = escapeICS(`[${statusLabel}] ${studentName} - ${subjectName}`);
+      const escapedDescription = escapeICS(descriptionLines.join('\n'));
+      const escapedLocation = escapeICS(location);
+
+      ics.push('BEGIN:VEVENT');
+      ics.push(`UID:lesson_${lesson.id}_${lesson._id || Date.now()}@tinhocgenz.com`);
+      ics.push(`DTSTAMP:${nowStr}`);
+      ics.push(`DTSTART;TZID=Asia/Ho_Chi_Minh:${dtstart}`);
+      ics.push(`DTEND;TZID=Asia/Ho_Chi_Minh:${dtend}`);
+      ics.push(`SUMMARY:${escapedSummary}`);
+      ics.push(`DESCRIPTION:${escapedDescription}`);
+      ics.push(`LOCATION:${escapedLocation}`);
+      ics.push('END:VEVENT');
+    }
+
+    ics.push('END:VCALENDAR');
+
+    const icsContent = ics.map(foldLine).join('\r\n');
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="tutor_${cleanTutorId}.ics"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    res.send(icsContent);
+  } catch (err) {
+    res.status(500).send(`Error generating calendar feed: ${err.message}`);
+  }
 });
 
 // Start Server (only if not running on Vercel)
