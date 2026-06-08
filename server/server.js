@@ -55,9 +55,9 @@ const MOCK_TUTORS = [
 ];
 
 const MOCK_STUDENTS = [
-  { id: 'HV001', name: 'Trần Thị B', phone: '0987654321', age: 15, subjectId: 'MH_PY01', expectedSessions: 24, completedSessions: 1, remainingSessions: 23, learningFormat: 'Offline', address: '456 Nguyễn Trãi, Thanh Xuân, Hà Nội', tutorId: 'GS001', referralId: 'NG002', totalTuition: 3000000, paidTuition: 1500000, debtTuition: 1500000, status: 'Đang học', registerDate: '01/06/2026' },
-  { id: 'HV002', name: 'Lê Hoàng Long', phone: '0911223344', age: 10, subjectId: 'MH_SCR01', expectedSessions: 20, completedSessions: 2, remainingSessions: 18, learningFormat: 'Online', address: 'meet.google.com/abc-xyz', tutorId: 'GS003', referralId: 'NG001', totalTuition: 2400000, paidTuition: 2400000, debtTuition: 0, status: 'Đang học', registerDate: '25/05/2026' },
-  { id: 'HV003', name: 'Nguyễn Hà Anh', phone: '0933445566', age: 20, subjectId: 'MH_OFC01', expectedSessions: 12, completedSessions: 12, remainingSessions: 0, learningFormat: 'Online', address: 'meet.google.com/def-uvw', tutorId: 'GS002', referralId: 'NG003', totalTuition: 2000000, paidTuition: 2000000, debtTuition: 0, status: 'Đã tốt nghiệp', registerDate: '15/04/2026' }
+  { id: 'HV001', name: 'Trần Thị B', phone: '0987654321', age: 15, subjectId: 'MH_PY01', expectedSessions: 24, completedSessions: 1, remainingSessions: 23, learningFormat: 'Offline', address: '456 Nguyễn Trãi, Thanh Xuân, Hà Nội', tutorId: 'GS001', referralId: 'NG002', totalTuition: 3000000, paidTuition: 1500000, debtTuition: 1500000, status: 'Đang học', registerDate: '01/06/2026', notes: 'Học viên chăm chỉ, cần thực hành nhiều về vòng lặp' },
+  { id: 'HV002', name: 'Lê Hoàng Long', phone: '0911223344', age: 10, subjectId: 'MH_SCR01', expectedSessions: 20, completedSessions: 2, remainingSessions: 18, learningFormat: 'Online', address: 'meet.google.com/abc-xyz', tutorId: 'GS003', referralId: 'NG001', totalTuition: 2400000, paidTuition: 2400000, debtTuition: 0, status: 'Đang học', registerDate: '25/05/2026', notes: 'Ưa thích làm game hoạt hình' },
+  { id: 'HV003', name: 'Nguyễn Hà Anh', phone: '0933445566', age: 20, subjectId: 'MH_OFC01', expectedSessions: 12, completedSessions: 12, remainingSessions: 0, learningFormat: 'Online', address: 'meet.google.com/def-uvw', tutorId: 'GS002', referralId: 'NG003', totalTuition: 2000000, paidTuition: 2000000, debtTuition: 0, status: 'Đã tốt nghiệp', registerDate: '15/04/2026', notes: 'Đã hoàn thành khóa học xuất sắc' }
 ];
 
 const MOCK_RECEIPTS = [
@@ -168,7 +168,7 @@ app.post('/api/students/recalculate', async (req, res) => {
 
 // Subjects CRUD
 app.get('/api/subjects', async (req, res) => {
-  try { res.json(await Subject.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+  try { res.json(await Subject.find().sort({ _id: -1 })); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/subjects', async (req, res) => {
   try {
@@ -193,7 +193,7 @@ app.delete('/api/subjects/:id', async (req, res) => {
 
 // Referrals CRUD
 app.get('/api/referrals', async (req, res) => {
-  try { res.json(await Referral.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+  try { res.json(await Referral.find().sort({ _id: -1 })); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/referrals', async (req, res) => {
   try {
@@ -218,7 +218,7 @@ app.delete('/api/referrals/:id', async (req, res) => {
 
 // Tutors CRUD
 app.get('/api/tutors', async (req, res) => {
-  try { res.json(await Tutor.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+  try { res.json(await Tutor.find().sort({ _id: -1 })); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/tutors', async (req, res) => {
   try {
@@ -257,7 +257,7 @@ app.delete('/api/tutors/:id', async (req, res) => {
 // Students CRUD
 app.get('/api/students', async (req, res) => {
   try {
-    res.json(await Student.find());
+    res.json(await Student.find().sort({ _id: -1 }));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/students', async (req, res) => {
@@ -299,7 +299,7 @@ app.delete('/api/students/:id', async (req, res) => {
 
 // Receipts CRUD
 app.get('/api/receipts', async (req, res) => {
-  try { res.json(await Receipt.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+  try { res.json(await Receipt.find().sort({ _id: -1 })); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/receipts', async (req, res) => {
   try {
@@ -325,7 +325,7 @@ app.delete('/api/receipts/:id', async (req, res) => {
 
 // Payouts CRUD
 app.get('/api/payouts', async (req, res) => {
-  try { res.json(await Payout.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+  try { res.json(await Payout.find().sort({ _id: -1 })); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 // Payout validate helper API
 app.get('/api/payouts/validate/:studentId', async (req, res) => {
@@ -421,7 +421,7 @@ app.delete('/api/payouts/:id', async (req, res) => {
 
 // Lessons CRUD
 app.get('/api/lessons', async (req, res) => {
-  try { res.json(await Lesson.find()); } catch (err) { res.status(500).json({ error: err.message }); }
+  try { res.json(await Lesson.find().sort({ _id: -1 })); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/lessons', async (req, res) => {
   try {

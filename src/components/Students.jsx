@@ -42,7 +42,8 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
     tutorId: '',
     referralId: '',
     totalTuition: 3000000,
-    status: 'Đang học'
+    status: 'Đang học',
+    notes: ''
   });
 
   useEffect(() => {
@@ -82,7 +83,8 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       tutorId: tutors[0]?.id || '',
       referralId: referrals[0]?.id || '',
       totalTuition: subjects[0]?.tuition || 3000000,
-      status: 'Đang học'
+      status: 'Đang học',
+      notes: ''
     });
     setShowAddModal(true);
   };
@@ -102,7 +104,8 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
       tutorId: student.tutorId,
       referralId: student.referralId,
       totalTuition: student.totalTuition,
-      status: student.status
+      status: student.status,
+      notes: student.notes || ''
     });
     setShowEditModal(true);
   };
@@ -538,6 +541,17 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     </select>
                   </div>
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">Ghi chú thông tin học viên</label>
+                  <textarea
+                    className="form-control"
+                    placeholder="Nhập ghi chú hoặc thông tin bổ sung về học viên..."
+                    value={form.notes}
+                    onChange={e => setForm({ ...form, notes: e.target.value })}
+                    rows={3}
+                  />
+                </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setShowAddModal(false)}>Hủy</button>
@@ -705,6 +719,17 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     </select>
                   </div>
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">Ghi chú thông tin học viên</label>
+                  <textarea
+                    className="form-control"
+                    placeholder="Nhập ghi chú hoặc thông tin bổ sung về học viên..."
+                    value={form.notes}
+                    onChange={e => setForm({ ...form, notes: e.target.value })}
+                    rows={3}
+                  />
+                </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setShowEditModal(false)}>Hủy</button>
@@ -769,6 +794,12 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                   <span className="detail-label">Nguồn giới thiệu</span>
                   <span className="detail-value">
                     {referrals.find(r => r.id === activeStudentDrawer.referralId)?.name || 'Trực tiếp'}
+                  </span>
+                </div>
+                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                  <span className="detail-label">Ghi chú thông tin</span>
+                  <span className="detail-value" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontWeight: 'normal' }}>
+                    {activeStudentDrawer.notes || 'Không có ghi chú'}
                   </span>
                 </div>
               </div>

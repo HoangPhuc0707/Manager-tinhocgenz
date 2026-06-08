@@ -84,7 +84,13 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedDateStr, setSelectedDateStr] = useState('');
+  const [selectedDateStr, setSelectedDateStr] = useState(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
   const [selectedLesson, setSelectedLesson] = useState(null);
 
   // Confirm Delete Modal
@@ -232,7 +238,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
 
   // Handle cell click
   const handleCellClick = (day) => {
-    openAddModal(formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), day));
+    setSelectedDateStr(formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), day));
   };
 
   const handleStudentChange = (studentId) => {

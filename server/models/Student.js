@@ -17,7 +17,8 @@ const StudentSchema = new mongoose.Schema({
   paidTuition: { type: Number, default: 0 },
   debtTuition: { type: Number, default: 3000000 },
   status: { type: String, default: 'Đang học' },
-  registerDate: { type: String }
+  registerDate: { type: String },
+  notes: { type: String, default: '' }
 });
 
 export default mongoose.model('Student', StudentSchema);
