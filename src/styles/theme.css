@@ -974,7 +974,7 @@ tr:hover td {
     padding: 16px !important;
     flex: 1 !important;
     overflow-y: auto !important;
-    max-height: none !important;
+    max-height: calc(90vh - 130px) !important;
   }
 
   .modal-header, .modal-footer {

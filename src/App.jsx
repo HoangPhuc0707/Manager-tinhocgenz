@@ -18,12 +18,19 @@ function App() {
     const saved = localStorage.getItem('user_session');
     return saved ? JSON.parse(saved) : null;
   });
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('active_tab') || 'dashboard';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
 
   const role = user ? user.role : 'Admin';
   const activeTutorId = user ? user.linkId : '';
+
+  // Synchronize activeTab to localStorage
+  useEffect(() => {
+    localStorage.setItem('active_tab', activeTab);
+  }, [activeTab]);
 
   // Initialize LocalStorage DB on startup
   useEffect(() => {
@@ -52,6 +59,7 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user_session');
+    localStorage.removeItem('active_tab');
     triggerToast('Đã đăng xuất tài khoản!', 'success');
   };
 
