@@ -305,19 +305,32 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
 
                 let statusBadge = 'badge-primary';
                 let statusText = s.status;
+                let customBadgeStyle = {};
                 if (s.status === 'Đang học') {
                   statusBadge = 'badge-success';
                   statusText = 'Đang học';
                 } else if (s.status === 'Tạm dừng') {
-                  statusBadge = 'badge-danger';
-                  statusText = 'Tạm nghỉ';
+                  statusBadge = '';
+                  statusText = '🛑 Tạm nghỉ';
+                  customBadgeStyle = {
+                    backgroundColor: '#fee2e2',
+                    color: '#991b1b',
+                    border: '1px solid #fca5a5',
+                    fontWeight: 700
+                  };
                 } else if (s.status === 'Đã tốt nghiệp') {
-                  statusBadge = 'badge-success';
-                  statusText = 'Tốt nghiệp';
+                  statusBadge = '';
+                  statusText = '🎓 Tốt nghiệp';
+                  customBadgeStyle = {
+                    backgroundColor: '#f3e8ff',
+                    color: '#6b21a8',
+                    border: '1px solid #e9d5ff',
+                    fontWeight: 700
+                  };
                 }
 
                 return (
-                  <tr key={s.id} className="crm-table-row" onClick={() => setActiveStudentDrawer(s)} style={{ cursor: 'pointer' }}>
+                  <tr key={s.id} className={`crm-table-row ${s.status === 'Tạm dừng' ? 'row-muted' : ''}`} onClick={() => setActiveStudentDrawer(s)} style={{ cursor: 'pointer' }}>
                     <td>
                       <div>
                         <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>{s.id}</div>
@@ -349,7 +362,7 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                       </div>
                     </td>
                     <td>
-                      <span className={`badge ${statusBadge}`}>{statusText}</span>
+                      <span className={`badge ${statusBadge}`} style={customBadgeStyle}>{statusText}</span>
                     </td>
                     {role === 'Admin' && (
                       <td>
@@ -888,7 +901,35 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
             <div className="drawer-footer">
               <button className="btn btn-outline" onClick={() => setActiveStudentDrawer(null)}>Đóng</button>
               {role === 'Admin' && (
-                <button className="btn btn-primary" onClick={() => { handleEditClick(activeStudentDrawer); }}>Sửa hồ sơ</button>
+                <>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => {
+                      const student = activeStudentDrawer;
+                      const today = new Date().toISOString().split('T')[0];
+                      setForm({
+                        name: student.name,
+                        phone: student.phone,
+                        age: student.age || '',
+                        registerDate: today.split('-').reverse().join('/'),
+                        subjectId: subjects[0]?.id || '',
+                        expectedSessions: 24,
+                        learningFormat: student.learningFormat || 'Offline',
+                        address: student.address || '',
+                        tutorId: '',
+                        referralId: student.referralId || '',
+                        totalTuition: subjects[0]?.tuition || 3000000,
+                        status: 'Đang học',
+                        notes: `Đăng ký khóa mới (Học viên cũ: ${student.name} - ${student.id}).`
+                      });
+                      setActiveStudentDrawer(null);
+                      setShowAddModal(true);
+                    }}
+                  >
+                    Đăng ký khóa mới
+                  </button>
+                  <button className="btn btn-primary" onClick={() => { handleEditClick(activeStudentDrawer); }}>Sửa hồ sơ</button>
+                </>
               )}
             </div>
           </div>
@@ -926,6 +967,12 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
         }
         .crm-table-row:hover {
           background-color: #f1f5f9 !important;
+        }
+        .row-muted td {
+          color: var(--text-muted) !important;
+        }
+        .row-muted {
+          opacity: 0.7;
         }
       `}</style>
 

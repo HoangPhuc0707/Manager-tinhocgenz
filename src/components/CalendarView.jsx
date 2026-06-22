@@ -53,6 +53,9 @@ const checkLessonConflicts = (lesson, allLessons, students) => {
     // Gap = current_start - other_end OR other_start - current_end
     const gap = sTime >= oeTime ? sTime - oeTime : osTime - eTime;
     if (gap >= 0 && gap < 20) {
+      if (lesson.studentId === other.studentId) {
+        continue;
+      }
       const student = students.find(s => s.id === other.studentId);
       return {
         hasConflict: true,
@@ -65,6 +68,31 @@ const checkLessonConflicts = (lesson, allLessons, students) => {
   }
 
   return { hasConflict: false };
+};
+
+const addMinutesToTime = (timeStr, minutes) => {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  let totalMin = h * 60 + m + minutes;
+  totalMin = totalMin % 1440;
+  const newH = String(Math.floor(totalMin / 60)).padStart(2, '0');
+  const newM = String(totalMin % 60).padStart(2, '0');
+  return `${newH}:${newM}`;
+};
+
+const getExpectedDurationForStudent = (studentId, allLessons) => {
+  if (!studentId || !allLessons || allLessons.length === 0) return 120;
+  const studentLessons = allLessons.filter(l => l.studentId === studentId);
+  if (studentLessons.length === 0) return 120;
+  const sorted = [...studentLessons].sort((a, b) => b.dateTime.localeCompare(a.dateTime));
+  const latest = sorted[0];
+  const startStr = latest.dateTime.split('T')[1]?.slice(0, 5);
+  const endStr = latest.endTime;
+  if (!startStr || !endStr) return 120;
+  const [sh, sm] = startStr.split(':').map(Number);
+  const [eh, em] = endStr.split(':').map(Number);
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  return diff > 0 ? diff : 120;
 };
 
 const CalendarView = ({ role, activeTutorId, triggerToast }) => {
@@ -211,11 +239,13 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
 
     const defaultStudentId = activeTutorStudents[0]?.id || '';
     const student = students.find(s => s.id === defaultStudentId);
+    const duration = getExpectedDurationForStudent(defaultStudentId, lessons);
+    const defaultStartTime = '19:30';
 
     setNewLessonForm({
       studentId: defaultStudentId,
-      time: '19:30',
-      endTime: '21:00',
+      time: defaultStartTime,
+      endTime: addMinutesToTime(defaultStartTime, duration),
       date: formattedDate,
       learningFormat: student ? student.learningFormat : 'Offline',
       address: student ? student.address : '',
@@ -243,11 +273,22 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
 
   const handleStudentChange = (studentId) => {
     const student = students.find(s => s.id === studentId);
+    const duration = getExpectedDurationForStudent(studentId, lessons);
     setNewLessonForm(prev => ({
       ...prev,
       studentId,
       learningFormat: student ? student.learningFormat : 'Offline',
-      address: student ? student.address : ''
+      address: student ? student.address : '',
+      endTime: addMinutesToTime(prev.time, duration)
+    }));
+  };
+
+  const handleStartTimeChange = (newTime) => {
+    const duration = getExpectedDurationForStudent(newLessonForm.studentId, lessons);
+    setNewLessonForm(prev => ({
+      ...prev,
+      time: newTime,
+      endTime: addMinutesToTime(newTime, duration)
     }));
   };
 
@@ -778,7 +819,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
                           type="time"
                           className="form-control"
                           value={newLessonForm.time}
-                          onChange={e => setNewLessonForm({ ...newLessonForm, time: e.target.value })}
+                          onChange={e => handleStartTimeChange(e.target.value)}
                           required
                         />
                       </div>
@@ -1126,7 +1167,15 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
                           type="time"
                           className="form-control"
                           value={editLessonForm.time}
-                          onChange={e => setEditLessonForm({ ...editLessonForm, time: e.target.value })}
+                          onChange={e => {
+                            const newTime = e.target.value;
+                            const duration = getExpectedDurationForStudent(selectedLesson.studentId, lessons);
+                            setEditLessonForm(prev => ({
+                              ...prev,
+                              time: newTime,
+                              endTime: addMinutesToTime(newTime, duration)
+                            }));
+                          }}
                           required
                         />
                       </div>
