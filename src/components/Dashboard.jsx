@@ -118,6 +118,7 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
   // --- TUTOR STATISTICS ---
   const myStudents = students.filter(s => s.tutorId === activeTutorId);
   const myActiveStudents = myStudents.filter(s => s.status === 'Đang học' || s.status === 'Học thử').length;
+  const myGraduatedStudents = myStudents.filter(s => s.status === 'Đã tốt nghiệp').length;
   
   // Total classes/sessions completed by this tutor
   const myCompletedLessons = lessons.filter(l => l.tutorId === activeTutorId && l.status === 'Có học').length;
@@ -739,7 +740,7 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
         // ================= TUTOR VIEW =================
         <>
           {/* Tutor Stats Cards */}
-          <div className="stat-card-grid-saas" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          <div className="stat-card-grid-saas" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
             <div className="stat-card-saas">
               <div className="stat-card-saas-header">
                 <span className="stat-card-saas-label">Học viên đang dạy</span>
@@ -749,6 +750,17 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
               </div>
               <div className="stat-card-saas-value">{myActiveStudents}</div>
               <div className="stat-card-saas-sub">Học viên trong lớp dạy</div>
+            </div>
+
+            <div className="stat-card-saas">
+              <div className="stat-card-saas-header">
+                <span className="stat-card-saas-label">Học viên đã xong</span>
+                <span className="stat-card-saas-icon emerald">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                </span>
+              </div>
+              <div className="stat-card-saas-value">{myGraduatedStudents}</div>
+              <div className="stat-card-saas-sub">Đã hoàn thành khóa học</div>
             </div>
  
             <div className="stat-card-saas">

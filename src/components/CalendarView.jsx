@@ -102,8 +102,8 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   const [tutors, setTutors] = useState([]);
   const [subjects, setSubjects] = useState([]);
 
-  // Calendar State: Month is 0-indexed (June = 5)
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 1)); // Default June 2026
+  // Calendar State: Month is 0-indexed
+  const [currentDate, setCurrentDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
   // Filtering for Admin
   const [filterTutorId, setFilterTutorId] = useState('');
@@ -125,14 +125,20 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Add Lesson Form State
-  const [newLessonForm, setNewLessonForm] = useState({
-    studentId: '',
-    time: '19:30',
-    endTime: '21:00',
-    date: '2026-06-03',
-    learningFormat: 'Offline',
-    address: '',
-    note: ''
+  const [newLessonForm, setNewLessonForm] = useState(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return {
+      studentId: '',
+      time: '19:30',
+      endTime: '21:00',
+      date: `${y}-${m}-${d}`,
+      learningFormat: 'Offline',
+      address: '',
+      note: ''
+    };
   });
 
   // Batch scheduling states
@@ -230,8 +236,8 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   });
 
   const activeTutorStudents = role === 'Gia sư'
-    ? students.filter(s => s.tutorId === activeTutorId && !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status))
-    : students.filter(s => !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status));
+    ? students.filter(s => s.tutorId === activeTutorId && !['Tạm dừng'].includes(s.status))
+    : students.filter(s => !['Tạm dừng'].includes(s.status));
 
   const openAddModal = (dateStr) => {
     const formattedDate = dateStr || formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1);
