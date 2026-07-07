@@ -236,8 +236,8 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
   });
 
   const activeTutorStudents = role === 'Gia sư'
-    ? students.filter(s => s.tutorId === activeTutorId && !['Tạm dừng'].includes(s.status))
-    : students.filter(s => !['Tạm dừng'].includes(s.status));
+    ? students.filter(s => s.tutorId === activeTutorId && !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status))
+    : students.filter(s => !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status));
 
   const openAddModal = (dateStr) => {
     const formattedDate = dateStr || formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1);
