@@ -93,7 +93,10 @@ const recalculateStudent = async (studentId) => {
 
   const studentReceipts = await Receipt.find({ studentId });
   const paidTuition = studentReceipts.reduce((sum, r) => sum + Number(r.amount), 0);
-  const debtTuition = Math.max(0, Number(student.totalTuition) - paidTuition);
+  let debtTuition = Math.max(0, Number(student.totalTuition) - paidTuition);
+  if (student.status === 'Huỷ khoá') {
+    debtTuition = 0;
+  }
 
   const studentLessons = await Lesson.find({ studentId, status: 'Có học' });
   const completedSessions = studentLessons.length;

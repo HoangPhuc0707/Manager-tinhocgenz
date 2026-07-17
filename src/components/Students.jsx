@@ -267,9 +267,8 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
           <select className="filter-select" value={statusFilter} onChange={handleStatusFilterChange}>
             <option value="">Tất cả trạng thái</option>
             <option value="Đang học">Đang học</option>
-            <option value="Học thử">Học thử</option>
-            <option value="Đang tìm gia sư">Chờ xếp lớp</option>
             <option value="Tạm dừng">Tạm nghỉ</option>
+            <option value="Huỷ khoá">Huỷ khoá</option>
             <option value="Đã tốt nghiệp">Đã tốt nghiệp</option>
           </select>
         </div>
@@ -316,6 +315,15 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     backgroundColor: '#fee2e2',
                     color: '#991b1b',
                     border: '1px solid #fca5a5',
+                    fontWeight: 700
+                  };
+                } else if (s.status === 'Huỷ khoá') {
+                  statusBadge = '';
+                  statusText = '❌ Huỷ khoá';
+                  customBadgeStyle = {
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    border: '1px solid #f87171',
                     fontWeight: 700
                   };
                 } else if (s.status === 'Đã tốt nghiệp') {
@@ -507,9 +515,8 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                       onChange={e => setForm({ ...form, status: e.target.value })}
                     >
                       <option value="Đang học">Đang học</option>
-                      <option value="Học thử">Học thử</option>
-                      <option value="Đang tìm gia sư">Chờ xếp lớp</option>
                       <option value="Tạm dừng">Tạm nghỉ</option>
+                      <option value="Huỷ khoá">Huỷ khoá</option>
                       <option value="Đã tốt nghiệp">Đã tốt nghiệp</option>
                     </select>
                   </div>
@@ -686,9 +693,8 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                       onChange={e => setForm({ ...form, status: e.target.value })}
                     >
                       <option value="Đang học">Đang học</option>
-                      <option value="Học thử">Học thử</option>
-                      <option value="Đang tìm gia sư">Chờ xếp lớp</option>
                       <option value="Tạm dừng">Tạm nghỉ</option>
+                      <option value="Huỷ khoá">Huỷ khoá</option>
                       <option value="Đã tốt nghiệp">Đã tốt nghiệp</option>
                     </select>
                   </div>

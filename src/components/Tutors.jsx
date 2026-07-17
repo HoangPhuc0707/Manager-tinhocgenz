@@ -284,7 +284,7 @@ const Tutors = ({ role, triggerToast }) => {
       {/* Tutors Profile Cards Grid */}
       <div className="tutor-cards-grid" style={{ marginTop: 20 }}>
         {filteredTutors.map(t => {
-          const tutorStudents = students.filter(s => s.tutorId === t.id && (s.status === 'Đang học' || s.status === 'Học thử'));
+          const tutorStudents = students.filter(s => s.tutorId === t.id && s.status === 'Đang học');
           const tutorIncome = payouts
             .filter(p => p.type === 'Gia sư' && p.recipientId === t.id && p.status === 'Đã thanh toán')
             .reduce((sum, p) => sum + Number(p.amount), 0);

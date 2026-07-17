@@ -54,7 +54,7 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
  
   // --- ADMIN STATISTICS ---
   // Student counts
-  const activeStudents = students.filter(s => s.status === 'Đang học' || s.status === 'Học thử').length;
+  const activeStudents = students.filter(s => s.status === 'Đang học').length;
   const graduatedStudents = students.filter(s => s.status === 'Đã tốt nghiệp').length;
   const cancelledStudents = students.filter(s => s.status === 'Tạm dừng').length;
   
@@ -117,7 +117,7 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
  
   // --- TUTOR STATISTICS ---
   const myStudents = students.filter(s => s.tutorId === activeTutorId);
-  const myActiveStudents = myStudents.filter(s => s.status === 'Đang học' || s.status === 'Học thử').length;
+  const myActiveStudents = myStudents.filter(s => s.status === 'Đang học').length;
   const myGraduatedStudents = myStudents.filter(s => s.status === 'Đã tốt nghiệp').length;
   
   // Total classes/sessions completed by this tutor
@@ -448,7 +448,7 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
                 </span>
               </div>
               <div className="stat-card-saas-value">{activeStudents}</div>
-              <div className="stat-card-saas-sub">Đang học & học thử</div>
+              <div className="stat-card-saas-sub">Đang học</div>
             </div>
  
             <div className="stat-card-saas">

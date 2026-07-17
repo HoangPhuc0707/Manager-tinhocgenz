@@ -599,6 +599,10 @@ const Payments = ({ role, triggerToast }) => {
     const ref = referrals.find(r => r.id === s.referralId);
     const tutor = tutors.find(t => t.id === s.tutorId);
     
+    if (s.status === 'Huỷ khoá') {
+      return { label: 'Huỷ khoá', badgeClass: 'badge-danger' };
+    }
+
     const isTuitionPaid = s.debtTuition === 0;
     const isTutorPaid = (!tutor || !tutor.isPayable) ? true : (tutorPayout ? tutorPayout.status === 'Đã thanh toán' : false);
     const isRefPaid = (!ref || !ref.isPayable) ? true : (refPayout ? refPayout.status === 'Đã thanh toán' : false);
