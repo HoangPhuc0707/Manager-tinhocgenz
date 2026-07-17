@@ -347,8 +347,9 @@ const Payments = ({ role, triggerToast }) => {
   // --- ACTIONS: FLAT LIST VIEW ---
   const handleOpenAddReceiptFlatModal = () => {
     const today = new Date().toISOString().split('T')[0];
+    const eligibleStudents = students.filter(s => s.status !== 'Huỷ khoá');
     setFlatReceiptForm({
-      studentId: students[0]?.id || '',
+      studentId: eligibleStudents[0]?.id || '',
       amount: '',
       date: today.split('-').reverse().join('/'),
       method: 'Chuyển khoản',
@@ -800,7 +801,7 @@ const Payments = ({ role, triggerToast }) => {
                       </div>
                       <div className="financial-card-item">
                         <span className="detail-label">Còn nợ</span>
-                        <span style={{ fontWeight: 700, fontSize: '0.8rem', color: s.debtTuition > 0 ? 'var(--danger)' : 'var(--success)' }}>{formatCurrency(s.debtTuition)}</span>
+                        <span style={{ fontWeight: 700, fontSize: '0.8rem', color: s.status === 'Huỷ khoá' ? 'var(--text-muted)' : (s.debtTuition > 0 ? 'var(--danger)' : 'var(--success)') }}>{s.status === 'Huỷ khoá' ? 'Đã huỷ' : formatCurrency(s.debtTuition)}</span>
                       </div>
                     </div>
                   </div>
@@ -1396,7 +1397,7 @@ const Payments = ({ role, triggerToast }) => {
                 </div>
   
                 {/* Add new Receipt form */}
-                {role === 'Admin' && (
+                {role === 'Admin' && selectedStudent.status !== 'Huỷ khoá' && (
                   <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: 20 }}>
                     <h4 style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>Nạp tiền đóng học phí</h4>
                     <form onSubmit={handleAddReceiptSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1503,7 +1504,7 @@ const Payments = ({ role, triggerToast }) => {
                     required
                   >
                     <option value="">-- Chọn học viên --</option>
-                    {students.map(s => (
+                    {students.filter(s => s.status !== 'Huỷ khoá').map(s => (
                       <option key={s.id} value={s.id}>{s.id} - {s.name} (Nợ: {formatCurrency(s.debtTuition)})</option>
                     ))}
                   </select>
