@@ -57,44 +57,58 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
   const activeStudents = students.filter(s => s.status === 'Đang học').length;
   const graduatedStudents = students.filter(s => s.status === 'Đã tốt nghiệp').length;
   const cancelledStudents = students.filter(s => s.status === 'Tạm dừng').length;
-  
-  // Remaining student debt tuition
-  const totalDebtTuition = students.reduce((sum, s) => sum + Number(s.debtTuition || 0), 0);
+
+  // Tập IDs học viên Huỷ khoá — loại trừ khỏi tất cả tính toán tài chính
+  const cancelledStudentIds = new Set(students.filter(s => s.status === 'Huỷ khoá').map(s => s.id));
+
+  // Nợ học phí còn lại: chỉ tính học viên đang còn hoạt động (không tính Huỷ khoá)
+  const totalDebtTuition = students
+    .filter(s => s.status !== 'Huỷ khoá')
+    .reduce((sum, s) => sum + Number(s.debtTuition || 0), 0);
  
-  // Revenues (Thu học phí)
+  // Doanh thu (Thu học phí): chỉ tính receipts của học viên không bị Huỷ khoá
   const revenueThisMonth = receipts.filter(r => {
+    if (cancelledStudentIds.has(r.studentId)) return false;
     const date = parseMockDate(r.date);
     return isCurrentMonth(date);
   }).reduce((sum, r) => sum + Number(r.amount), 0);
  
   const revenueThisYear = receipts.filter(r => {
+    if (cancelledStudentIds.has(r.studentId)) return false;
     const date = parseMockDate(r.date);
     return isCurrentYear(date);
   }).reduce((sum, r) => sum + Number(r.amount), 0);
  
-  // Expenses (Thanh toán chi)
+  // Chi phí (Thanh toán chi): chỉ tính payouts của học viên không bị Huỷ khoá
   const payoutTutorThisMonth = payouts.filter(p => {
+    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Gia sư' && p.status === 'Đã thanh toán' && isCurrentMonth(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const payoutTutorThisYear = payouts.filter(p => {
+    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Gia sư' && p.status === 'Đã thanh toán' && isCurrentYear(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const payoutSourceThisMonth = payouts.filter(p => {
+    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Nguồn giới thiệu' && p.status === 'Đã thanh toán' && isCurrentMonth(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const payoutSourceThisYear = payouts.filter(p => {
+    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Nguồn giới thiệu' && p.status === 'Đã thanh toán' && isCurrentYear(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const totalExpenseThisMonth = payoutTutorThisMonth + payoutSourceThisMonth;
-  const totalDebtPayouts = payouts.filter(p => p.status === 'Chưa thanh toán').reduce((sum, p) => sum + Number(p.amount), 0);
+  // Chi phí chưa chi trả: chỉ tính của học viên đang hoạt động
+  const totalDebtPayouts = payouts
+    .filter(p => p.status === 'Chưa thanh toán' && !cancelledStudentIds.has(p.studentId))
+    .reduce((sum, p) => sum + Number(p.amount), 0);
  
   // Dynamic calculations based on timeFilter
   let adjustedRevenue = revenueThisMonth;
@@ -134,8 +148,10 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
  
   // Lists for Recent Activities
   const recentReceipts = [...receipts].sort((a,b) => parseMockDate(b.date) - parseMockDate(a.date)).slice(0, 5);
+  // Chỉ hiển thị buổi sắp tới của học viên còn đang học (không hiển thị học viên Huỷ khoá)
+  const activeStudentIds = new Set(students.filter(s => s.status !== 'Huỷ khoá').map(s => s.id));
   const myUpcomingLessons = [...lessons]
-    .filter(l => l.tutorId === activeTutorId && l.status === 'Chưa diễn ra')
+    .filter(l => l.tutorId === activeTutorId && l.status === 'Chưa diễn ra' && activeStudentIds.has(l.studentId))
     .sort((a,b) => parseMockDate(a.dateTime) - parseMockDate(b.dateTime))
     .slice(0, 5);
  
@@ -161,8 +177,12 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
 
   const todayStr = getTodayDateStr();
 
-  // Filter lessons based on role and tutor selection (for admin)
+  // IDs học viên đang hoạt động (không tính Huỷ khoá)
+  const activeStudentIdsForAttendance = new Set(students.filter(s => s.status !== 'Huỷ khoá').map(s => s.id));
+
+  // Lọc buổi học cho điểm danh: bỏ qua buổi của học viên đã Huỷ khoá
   const baseAttendanceLessons = lessons.filter(l => {
+    if (!activeStudentIdsForAttendance.has(l.studentId)) return false;
     if (role === 'Gia sư') {
       return l.tutorId === activeTutorId;
     }

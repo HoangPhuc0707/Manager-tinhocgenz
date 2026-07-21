@@ -72,6 +72,7 @@ const Payments = ({ role, triggerToast }) => {
   const [cardTuitionFilter, setCardTuitionFilter] = useState('');
   const [cardTutorFilter, setCardTutorFilter] = useState('');
   const [cardRefFilter, setCardRefFilter] = useState('');
+  const [showCancelledStudents, setShowCancelledStudents] = useState(false); // Ẩn học viên Huỷ khoá mặc định
 
   // Flat Modals & Forms
   const [showAddReceiptFlatModal, setShowAddReceiptFlatModal] = useState(false);
@@ -519,6 +520,9 @@ const Payments = ({ role, triggerToast }) => {
 
   // Filter students by financial card status
   const filteredCardStudents = searchedStudents.filter(s => {
+    // Ẩn học viên Huỷ khoá khỏi card view trừ khi bật toggle xem
+    if (s.status === 'Huỷ khoá' && !showCancelledStudents) return false;
+
     const tutorPayout = payouts.find(p => p.studentId === s.id && p.type === 'Gia sư');
     const refPayout = payouts.find(p => p.studentId === s.id && p.type === 'Nguồn giới thiệu');
     const ref = referrals.find(r => r.id === s.referralId);
@@ -561,8 +565,13 @@ const Payments = ({ role, triggerToast }) => {
     return matchSearch && matchType && matchStatus;
   });
  
-  // Priority sorting: accounts needing action (debt > 0 or pending payout) are pushed to the top
+  // Ưu tiên sắp xếp: các học viên cần xử lý (nợ học phí / chưa chi) lên đầu
+  // Học viên Huỷ khoá luôn được đẩy xuống cuối danh sách
   const sortedStudents = [...filteredCardStudents].sort((a, b) => {
+    // Huỷ khoá luôn ở cuối
+    if (a.status === 'Huỷ khoá' && b.status !== 'Huỷ khoá') return 1;
+    if (a.status !== 'Huỷ khoá' && b.status === 'Huỷ khoá') return -1;
+
     const aTutorPayout = payouts.find(p => p.studentId === a.id && p.type === 'Gia sư');
     const aRefPayout = payouts.find(p => p.studentId === a.id && p.type === 'Nguồn giới thiệu');
     const bTutorPayout = payouts.find(p => p.studentId === b.id && p.type === 'Gia sư');
@@ -590,7 +599,7 @@ const Payments = ({ role, triggerToast }) => {
  
     if (aNeedsAction && !bNeedsAction) return -1;
     if (!aNeedsAction && bNeedsAction) return 1;
-    return b.debtTuition - a.debtTuition; // Default fallback to highest debt first
+    return b.debtTuition - a.debtTuition; // Mặc định: nợ nhiều hơn lên đầu
   });
  
   // Calculate financial status badges
@@ -752,6 +761,20 @@ const Payments = ({ role, triggerToast }) => {
                 <option value="unpaid">Chi Nguồn: Chưa chi</option>
               </select>
             </div>
+
+            {/* Toggle show cancelled students */}
+            {students.filter(s => s.status === 'Huỷ khoá').length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${showCancelledStudents ? 'btn-danger' : 'btn-outline'}`}
+                  style={{ whiteSpace: 'nowrap', opacity: showCancelledStudents ? 1 : 0.7 }}
+                  onClick={() => setShowCancelledStudents(prev => !prev)}
+                >
+                  {showCancelledStudents ? '❌ Ẩn Huỷ khoá' : `Huỷ khoá (${students.filter(s => s.status === 'Huỷ khoá').length})`}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* SaaS Grid of Financial Cards */}

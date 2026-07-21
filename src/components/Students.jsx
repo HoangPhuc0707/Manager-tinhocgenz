@@ -358,8 +358,8 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                     {role === 'Admin' && (
                       <>
                         <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{formatCurrency(s.totalTuition)}</td>
-                        <td style={{ fontWeight: 700, color: s.debtTuition > 0 ? 'var(--danger)' : 'var(--success)' }}>
-                          {formatCurrency(s.debtTuition)}
+                        <td style={{ fontWeight: 700, color: s.status === 'Huỷ khoá' ? 'var(--text-muted)' : (s.debtTuition > 0 ? 'var(--danger)' : 'var(--success)') }}>
+                          {s.status === 'Huỷ khoá' ? '—' : formatCurrency(s.debtTuition)}
                         </td>
                       </>
                     )}
@@ -861,7 +861,9 @@ const Students = ({ role, activeTutorId, triggerToast }) => {
                       </div>
                       <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                         <span className="detail-label">Nợ học phí còn lại</span>
-                        <span className="detail-value text-danger" style={{ color: activeStudentDrawer.debtTuition > 0 ? 'var(--danger)' : 'var(--success)' }}>{formatCurrency(activeStudentDrawer.debtTuition)}</span>
+                        <span className="detail-value text-danger" style={{ color: activeStudentDrawer.status === 'Huỷ khoá' ? 'var(--text-muted)' : (activeStudentDrawer.debtTuition > 0 ? 'var(--danger)' : 'var(--success)') }}>
+                          {activeStudentDrawer.status === 'Huỷ khoá' ? '— Khoá đã huỷ, không cần hoàn thành' : formatCurrency(activeStudentDrawer.debtTuition)}
+                        </span>
                       </div>
                     </div>
 

@@ -235,9 +235,11 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
     return match;
   });
 
+  // Chỉ cho phép lên lịch cho học viên đang học (loại trừ: Tạm dừng, Đã tốt nghiệp, Huỷ khoá)
+  const INACTIVE_STATUSES = ['Tạm dừng', 'Đã tốt nghiệp', 'Huỷ khoá'];
   const activeTutorStudents = role === 'Gia sư'
-    ? students.filter(s => s.tutorId === activeTutorId && !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status))
-    : students.filter(s => !['Tạm dừng', 'Đã tốt nghiệp'].includes(s.status));
+    ? students.filter(s => s.tutorId === activeTutorId && !INACTIVE_STATUSES.includes(s.status))
+    : students.filter(s => !INACTIVE_STATUSES.includes(s.status));
 
   const openAddModal = (dateStr) => {
     const formattedDate = dateStr || formatIsoDate(currentDate.getFullYear(), currentDate.getMonth(), 1);
