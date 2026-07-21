@@ -10,6 +10,7 @@ import Students from './components/Students';
 import Payments from './components/Payments';
 import Settings from './components/Settings';
 import Login from './components/Login';
+import AIScheduler from './components/AIScheduler';
 import './styles/theme.css';
 
 function App() {
@@ -141,6 +142,8 @@ function App() {
         return <Students role={role} activeTutorId={activeTutorId} triggerToast={triggerToast} />;
       case 'payments':
         return <Payments role={role} triggerToast={triggerToast} />;
+      case 'ai':
+        return <AIScheduler role={role} activeTutorId={activeTutorId} triggerToast={triggerToast} />;
       case 'settings':
         return <Settings role={role} triggerToast={triggerToast} />;
       default:

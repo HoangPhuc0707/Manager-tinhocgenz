@@ -4,6 +4,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Import Models
 import Subject from './models/Subject.js';
@@ -659,6 +660,152 @@ app.get('/api/calendar/feed/:tutorId.ics', async (req, res) => {
     res.send(icsContent);
   } catch (err) {
     res.status(500).send(`Error generating calendar feed: ${err.message}`);
+  }
+});
+
+// --- AI SCHEDULE ASSISTANT ---
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+app.post('/api/ai/schedule-suggest', async (req, res) => {
+  try {
+    const { message, role, tutorId, conversationHistory = [] } = req.body;
+
+    // --- Thu thập context từ DB dựa trên role ---
+    let tutors = [];
+    let students = [];
+    let lessons = [];
+    let subjects = [];
+
+    subjects = await Subject.find();
+
+    if (role === 'Admin') {
+      // Admin thấy toàn bộ hệ thống
+      tutors = await Tutor.find();
+      students = await Student.find();
+      // Chỉ lấy lịch trong 4 tuần gần nhất để giảm token
+      const fourWeeksAgo = new Date();
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      lessons = await Lesson.find({ dateTime: { $gte: fourWeeksAgo.toISOString().slice(0, 10) } });
+    } else if (role === 'Gia sư' && tutorId) {
+      // Gia sư chỉ thấy data của mình
+      tutors = await Tutor.find({ id: tutorId });
+      students = await Student.find({ tutorId: tutorId });
+      const studentIds = students.map(s => s.id);
+      lessons = await Lesson.find({ tutorId: tutorId });
+    }
+
+    // --- Build context summary cho AI ---
+    const subjectMap = {};
+    subjects.forEach(s => { subjectMap[s.id] = s.name; });
+
+    const tutorsSummary = tutors.map(t => ({
+      id: t.id,
+      name: t.name,
+      subjects: t.subjects.map(sid => subjectMap[sid] || sid),
+      status: t.status
+    }));
+
+    const studentsSummary = students.map(s => ({
+      id: s.id,
+      name: s.name,
+      subject: subjectMap[s.subjectId] || s.subjectId,
+      tutorId: s.tutorId,
+      tutorName: tutors.find(t => t.id === s.tutorId)?.name || s.tutorId,
+      remainingSessions: s.remainingSessions,
+      completedSessions: s.completedSessions,
+      expectedSessions: s.expectedSessions,
+      learningFormat: s.learningFormat,
+      address: s.address,
+      status: s.status,
+      notes: s.notes
+    }));
+
+    const lessonsSummary = lessons.map(l => ({
+      id: l.id,
+      tutorId: l.tutorId,
+      studentId: l.studentId,
+      dateTime: l.dateTime,
+      endTime: l.endTime,
+      status: l.status,
+      learningFormat: l.learningFormat
+    }));
+
+    // --- Lấy ngày hiện tại ---
+    const now = new Date();
+    const todayVN = now.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+    const systemPrompt = `Bạn là trợ lý AI thông minh của trung tâm tin học GenZ, chuyên giúp sắp xếp và gợi ý lịch học cho gia sư và học viên.
+
+Hôm nay là: ${todayVN}
+Vai trò người dùng hiện tại: ${role}${role === 'Gia sư' ? ` (ID: ${tutorId})` : ''}
+
+=== DỮ LIỆU HỆ THỐNG ===
+
+DANH SÁCH GIA SƯ:
+${JSON.stringify(tutorsSummary, null, 2)}
+
+DANH SÁCH HỌC VIÊN:
+${JSON.stringify(studentsSummary, null, 2)}
+
+LỊCH HỌC GẦN ĐÂY:
+${JSON.stringify(lessonsSummary, null, 2)}
+
+=== QUY TẮC PHẢN HỒI ===
+1. Trả lời bằng tiếng Việt, thân thiện và chuyên nghiệp.
+2. Khi gợi ý lịch học, luôn kiểm tra xung đột (cùng gia sư, cùng thời điểm).
+3. Nếu gợi ý các buổi học cụ thể, hãy trả về ĐỒNG THỜI một mảng JSON "suggestions" ở cuối phản hồi, theo định dạng:
+   |||SUGGESTIONS_JSON|||
+   [
+     {
+       "tutorId": "GS001",
+       "tutorName": "Nguyễn Văn A",
+       "studentId": "HV001",
+       "studentName": "Tên học viên",
+       "dateTime": "2026-07-28T18:00",
+       "endTime": "20:00",
+       "learningFormat": "Offline",
+       "address": "địa chỉ học",
+       "note": "Nội dung buổi học"
+     }
+   ]
+   |||END_SUGGESTIONS|||
+4. Nếu không có gợi ý lịch cụ thể, KHÔNG cần trả về JSON suggestions.
+5. ${role === 'Gia sư' ? 'Chú ý: Người dùng là gia sư, chỉ cung cấp thông tin liên quan đến họ và học sinh của họ.' : 'Admin có thể xem và sắp xếp lịch cho tất cả gia sư và học sinh.'}`;
+
+    // Format conversation history for Gemini
+    const history = conversationHistory.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    }));
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: systemPrompt,
+    });
+
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(message);
+    const rawReply = result.response.text();
+
+    // Parse suggestions từ phản hồi AI nếu có
+    let reply = rawReply;
+    let suggestions = [];
+
+    const suggestionsMatch = rawReply.match(/\|\|\|SUGGESTIONS_JSON\|\|\|([\s\S]*?)\|\|\|END_SUGGESTIONS\|\|\|/);
+    if (suggestionsMatch) {
+      try {
+        suggestions = JSON.parse(suggestionsMatch[1].trim());
+        // Xóa phần JSON ra khỏi text hiển thị
+        reply = rawReply.replace(/\|\|\|SUGGESTIONS_JSON\|\|\|[\s\S]*?\|\|\|END_SUGGESTIONS\|\|\|/, '').trim();
+      } catch (e) {
+        console.error('Failed to parse AI suggestions JSON:', e);
+      }
+    }
+
+    res.json({ reply, suggestions });
+  } catch (err) {
+    console.error('AI endpoint error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
