@@ -58,54 +58,53 @@ const Dashboard = ({ role, activeTutorId, triggerToast }) => {
   const graduatedStudents = students.filter(s => s.status === 'Đã tốt nghiệp').length;
   const cancelledStudents = students.filter(s => s.status === 'Tạm dừng').length;
 
-  // Tập IDs học viên Huỷ khoá — loại trừ khỏi tất cả tính toán tài chính
+  // IDs học viên Huỷ khoá — dùng để loại trừ khỏi công nợ và phiếu chi chưa trả
   const cancelledStudentIds = new Set(students.filter(s => s.status === 'Huỷ khoá').map(s => s.id));
 
-  // Nợ học phí còn lại: chỉ tính học viên đang còn hoạt động (không tính Huỷ khoá)
+  // Công nợ học phí: backend đã đặt debtTuition = 0 cho Huỷ khoá.
+  // Filter thêm để đảm bảo về mặt logic (tránh dữ liệu cũ chưa kịp recalculate).
   const totalDebtTuition = students
     .filter(s => s.status !== 'Huỷ khoá')
     .reduce((sum, s) => sum + Number(s.debtTuition || 0), 0);
  
-  // Doanh thu (Thu học phí): chỉ tính receipts của học viên không bị Huỷ khoá
+  // Doanh thu thực thu (receipts): GHI NHẬN ĐẦY ĐỦ kể cả học viên Huỷ khoá đã đóng tiền.
+  // Tiền đã thu là giao dịch thực — không xoá khỏi sổ sách.
   const revenueThisMonth = receipts.filter(r => {
-    if (cancelledStudentIds.has(r.studentId)) return false;
     const date = parseMockDate(r.date);
     return isCurrentMonth(date);
   }).reduce((sum, r) => sum + Number(r.amount), 0);
  
   const revenueThisYear = receipts.filter(r => {
-    if (cancelledStudentIds.has(r.studentId)) return false;
     const date = parseMockDate(r.date);
     return isCurrentYear(date);
   }).reduce((sum, r) => sum + Number(r.amount), 0);
  
-  // Chi phí (Thanh toán chi): chỉ tính payouts của học viên không bị Huỷ khoá
+  // Chi phí đã thanh toán: GHI NHẬN ĐẦY ĐỦ kể cả của học viên Huỷ khoá.
+  // Tiền đã chi cho gia sư/nguồn là giao dịch thực — không xoá khỏi sổ sách.
   const payoutTutorThisMonth = payouts.filter(p => {
-    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Gia sư' && p.status === 'Đã thanh toán' && isCurrentMonth(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const payoutTutorThisYear = payouts.filter(p => {
-    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Gia sư' && p.status === 'Đã thanh toán' && isCurrentYear(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const payoutSourceThisMonth = payouts.filter(p => {
-    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Nguồn giới thiệu' && p.status === 'Đã thanh toán' && isCurrentMonth(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const payoutSourceThisYear = payouts.filter(p => {
-    if (cancelledStudentIds.has(p.studentId)) return false;
     const date = parseMockDate(p.date);
     return p.type === 'Nguồn giới thiệu' && p.status === 'Đã thanh toán' && isCurrentYear(date);
   }).reduce((sum, p) => sum + Number(p.amount), 0);
  
   const totalExpenseThisMonth = payoutTutorThisMonth + payoutSourceThisMonth;
-  // Chi phí chưa chi trả: chỉ tính của học viên đang hoạt động
+
+  // Phiếu chi chưa thanh toán: KHÔNG tính phiếu của học viên Huỷ khoá
+  // vì khoá đã huỷ, không cần thanh toán thêm nữa.
   const totalDebtPayouts = payouts
     .filter(p => p.status === 'Chưa thanh toán' && !cancelledStudentIds.has(p.studentId))
     .reduce((sum, p) => sum + Number(p.amount), 0);

@@ -72,7 +72,6 @@ const Payments = ({ role, triggerToast }) => {
   const [cardTuitionFilter, setCardTuitionFilter] = useState('');
   const [cardTutorFilter, setCardTutorFilter] = useState('');
   const [cardRefFilter, setCardRefFilter] = useState('');
-  const [showCancelledStudents, setShowCancelledStudents] = useState(false); // Ẩn học viên Huỷ khoá mặc định
 
   // Flat Modals & Forms
   const [showAddReceiptFlatModal, setShowAddReceiptFlatModal] = useState(false);
@@ -520,9 +519,6 @@ const Payments = ({ role, triggerToast }) => {
 
   // Filter students by financial card status
   const filteredCardStudents = searchedStudents.filter(s => {
-    // Ẩn học viên Huỷ khoá khỏi card view trừ khi bật toggle xem
-    if (s.status === 'Huỷ khoá' && !showCancelledStudents) return false;
-
     const tutorPayout = payouts.find(p => p.studentId === s.id && p.type === 'Gia sư');
     const refPayout = payouts.find(p => p.studentId === s.id && p.type === 'Nguồn giới thiệu');
     const ref = referrals.find(r => r.id === s.referralId);
@@ -532,17 +528,20 @@ const Payments = ({ role, triggerToast }) => {
     const isTutorPaid = (!tutor || !tutor.isPayable) ? true : (tutorPayout ? tutorPayout.status === 'Đã thanh toán' : false);
     const isRefPaid = (!ref || !ref.isPayable) ? true : (refPayout ? refPayout.status === 'Đã thanh toán' : false);
     
-    // 1. Tuition filter
-    if (cardTuitionFilter === 'paid' && !isTuitionPaid) return false;
-    if (cardTuitionFilter === 'debt' && s.debtTuition === 0) return false;
+    // Bộ lọc bảng: học viên Huỷ khoá vẫn hiển thị, chỉ bị ẩn khi lọc theo trạng thái cụ thể
+    if (s.status !== 'Huỷ khoá') {
+      // 1. Tuition filter
+      if (cardTuitionFilter === 'paid' && !isTuitionPaid) return false;
+      if (cardTuitionFilter === 'debt' && s.debtTuition === 0) return false;
 
-    // 2. Tutor payout filter
-    if (cardTutorFilter === 'paid' && !isTutorPaid) return false;
-    if (cardTutorFilter === 'unpaid' && isTutorPaid) return false;
+      // 2. Tutor payout filter
+      if (cardTutorFilter === 'paid' && !isTutorPaid) return false;
+      if (cardTutorFilter === 'unpaid' && isTutorPaid) return false;
 
-    // 3. Referral payout filter
-    if (cardRefFilter === 'paid' && !isRefPaid) return false;
-    if (cardRefFilter === 'unpaid' && isRefPaid) return false;
+      // 3. Referral payout filter
+      if (cardRefFilter === 'paid' && !isRefPaid) return false;
+      if (cardRefFilter === 'unpaid' && isRefPaid) return false;
+    }
 
     return true;
   });
@@ -761,20 +760,6 @@ const Payments = ({ role, triggerToast }) => {
                 <option value="unpaid">Chi Nguồn: Chưa chi</option>
               </select>
             </div>
-
-            {/* Toggle show cancelled students */}
-            {students.filter(s => s.status === 'Huỷ khoá').length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className={`btn btn-sm ${showCancelledStudents ? 'btn-danger' : 'btn-outline'}`}
-                  style={{ whiteSpace: 'nowrap', opacity: showCancelledStudents ? 1 : 0.7 }}
-                  onClick={() => setShowCancelledStudents(prev => !prev)}
-                >
-                  {showCancelledStudents ? '❌ Ẩn Huỷ khoá' : `Huỷ khoá (${students.filter(s => s.status === 'Huỷ khoá').length})`}
-                </button>
-              </div>
-            )}
           </div>
 
           {/* SaaS Grid of Financial Cards */}
@@ -790,7 +775,11 @@ const Payments = ({ role, triggerToast }) => {
               const ref = referrals.find(r => r.id === s.referralId);
 
               return (
-                <div className="financial-card-saas" key={s.id}>
+                <div 
+                  className="financial-card-saas" 
+                  key={s.id}
+                  style={s.status === 'Huỷ khoá' ? { opacity: 0.82, borderColor: 'var(--border-color)', borderStyle: 'dashed' } : {}}
+                >
                   {/* Header profile details */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
@@ -924,8 +913,14 @@ const Payments = ({ role, triggerToast }) => {
 
                   {/* Receipts Manage Button */}
                   <div style={{ marginTop: 8 }}>
-                    <button className="btn btn-secondary btn-sm" style={{ width: '100%', padding: '5px' }} onClick={() => handleOpenReceiptsModal(s)}>
-                      {role === 'Admin' ? `Quản lý Lịch sử đóng học phí (${studentReceipts.length})` : `Xem Lịch sử đóng học phí (${studentReceipts.length})`}
+                    <button 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ width: '100%', padding: '5px' }} 
+                      onClick={() => handleOpenReceiptsModal(s)}
+                    >
+                      {s.status === 'Huỷ khoá'
+                        ? `Xem lịch sử đóng phí (${studentReceipts.length})`
+                        : (role === 'Admin' ? `Quản lý Lịch sử đóng học phí (${studentReceipts.length})` : `Xem Lịch sử đóng học phí (${studentReceipts.length})`)}
                     </button>
                   </div>
                 </div>
