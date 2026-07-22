@@ -585,6 +585,7 @@ const CalendarView = ({ role, activeTutorId, triggerToast }) => {
                   </h5>
                   <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
                     Sao chép đường dẫn bên dưới, mở <strong>Google Calendar</strong> trên web, chọn <strong>"Lịch khác" (+)</strong> &rarr; Chọn <strong>"Từ URL"</strong> và dán vào.
+                    <br/><span style={{ color: 'var(--warning)', fontWeight: 600, display: 'inline-block', marginTop: '4px' }}>⚠️ Lưu ý: Các thay đổi sẽ mất từ 12-24h để hiển thị trên Google Calendar (do chính sách đồng bộ của Google). iPhone sẽ cập nhật nhanh hơn.</span>
                   </p>
                   
                   <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>

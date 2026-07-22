@@ -599,6 +599,8 @@ app.get('/api/calendar/feed/:tutorId.ics', async (req, res) => {
     ics.push(`X-WR-CALNAME:Lich day - Gia su ${tutor.name}`);
     ics.push('X-WR-TIMEZONE:Asia/Ho_Chi_Minh');
     ics.push('X-WR-CALDESC:Lich day gia su tu dong dong bo tu Tin Hoc GenZ');
+    ics.push('REFRESH-INTERVAL;VALUE=DURATION:PT1H');
+    ics.push('X-PUBLISHED-TTL:PT1H');
 
     const nowStr = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
@@ -636,9 +638,16 @@ app.get('/api/calendar/feed/:tutorId.ics', async (req, res) => {
       const escapedDescription = escapeICS(descriptionLines.join('\n'));
       const escapedLocation = escapeICS(location);
 
+      const updatedAtStr = lesson.updatedAt 
+        ? new Date(lesson.updatedAt).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+        : nowStr;
+      
+      const uidSuffix = lesson._id ? `_${lesson._id}` : '';
+
       ics.push('BEGIN:VEVENT');
-      ics.push(`UID:lesson_${lesson.id}_${lesson._id || Date.now()}@tinhocgenz.com`);
-      ics.push(`DTSTAMP:${nowStr}`);
+      ics.push(`UID:lesson_${lesson.id}${uidSuffix}@tinhocgenz.com`);
+      ics.push(`DTSTAMP:${updatedAtStr}`);
+      ics.push(`LAST-MODIFIED:${updatedAtStr}`);
       ics.push(`DTSTART;TZID=Asia/Ho_Chi_Minh:${dtstart}`);
       ics.push(`DTEND;TZID=Asia/Ho_Chi_Minh:${dtend}`);
       ics.push(`SUMMARY:${escapedSummary}`);

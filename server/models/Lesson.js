@@ -11,6 +11,6 @@ const LessonSchema = new mongoose.Schema({
   note: { type: String },
   learningFormat: { type: String },
   address: { type: String }
-});
+}, { timestamps: true });
 
 export default mongoose.model('Lesson', LessonSchema);
